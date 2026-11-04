@@ -1,0 +1,16 @@
+# Steam zms: blocks the running game handed to the Unicorn interpreter ([INTERP] <VA> in run.log), harvested from
+# play sessions. Lift roots (scripts/build_steam.sh); tools/lift_extra.py --list reads the same format. Site: appel = call
+# target, saut = indirect jump target, bloc = missing block.
+0x4b9bf0  # appel
+0x5b4b9b  # bloc
+0x5bd154  # saut
+0x5bd15d  # saut
+0x5bd18d  # saut
+0x5fcae0  # appel
+0x62a4b0  # appel
+0x6dd910  # saut
+0x867a5d  # bloc
+0x86d380  # bloc
+0xa310c9  # bloc
+0xa3b8d8  # bloc
+0xa3b92e  # bloc

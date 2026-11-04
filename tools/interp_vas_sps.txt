@@ -1,0 +1,13 @@
+# Steam sps: blocks the running game handed to the Unicorn interpreter ([INTERP] <VA> in run.log), harvested from
+# play sessions. Lift roots (scripts/build_steam.sh); tools/lift_extra.py --list reads the same format. Site: appel = call
+# target, saut = indirect jump target, bloc = missing block.
+0x4b66d4  # saut
+0x4b672b  # saut
+0x565d60  # appel
+0x5fe740  # appel
+0x662c60  # appel
+0x7c681e  # saut
+0x7c68a4  # saut
+0x92724f  # saut
+0x9279c4  # bloc
+0x938657  # bloc
