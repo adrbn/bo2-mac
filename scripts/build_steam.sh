@@ -29,7 +29,9 @@ for spec in "sps 9211 t6sp" "zms 12533 t6zm" "mps 12664 t6mp"; do
   if [ ! -f $W/.fini ]; then
     [ -s bin/ghidra-out-$t/calltree.csv ] || BO2_TARGET=$t python3 tools/ghidra_csv.py remplir "$S/$3.exe.unpacked.exe"
     [ -f $W/runway_vide.txt ] || : > $W/runway_vide.txt
-    B="LIFT_PISTE_ENTIERE=1 BO2_TARGET=$t BOOT_WORKDIR=$W LIFT_ROOTS_FILE=tools/lift_roots_$t.txt LIFT_RUNWAY_FILE=$W/runway_vide.txt"
+    # roots + blocks the game still interprets (tools/interp_vas_*, and runs/interp_vas_* that play_steam.sh collects)
+    cat tools/lift_roots_$t.txt tools/interp_vas_$t.txt $(ls runs/interp_vas_$t.txt 2>/dev/null) > $W/roots.txt
+    B="LIFT_PISTE_ENTIERE=1 BO2_TARGET=$t BOOT_WORKDIR=$W LIFT_ROOTS_FILE=$W/roots.txt LIFT_RUNWAY_FILE=$W/runway_vide.txt"
     if [ ! -f $W/.plie ]; then
       garde; say "$P %  $3: lift"
       env $B python3 -u tools/boot.py -n $N -j $J --build-only > $W/lift.log 2>&1 || die "$3 lift failed (see $W/lift.log)"

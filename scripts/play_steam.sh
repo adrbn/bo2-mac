@@ -34,7 +34,7 @@ env DYLD_LIBRARY_PATH="$PWD/boot_cache/hlslcc_build" \
     ${TU:+BO2_FFOTD_TU=$TU} BO2_VB_RESIDENT=1 BO2_VPX_NATIVE=1 BO2_VPX_REPLACE=1 \
     BO2_W32_FAST=1 BO2_PREEMPT_W=20000 BO2_CS_COOP=1 BO2_RR_FAIR=1 BO2_REAL_MUTEX=1 \
     BO2_HOST_THREADS=jq,snd,snddec,srv,backend BO2_HW_ATOMICS=2 BO2_CMDPIPE=/tmp/bo2$T.cmd BO2_KEYPIPE=/tmp/bo2$T.key \
-    "$@" ./boot_cache/$T/boot boot_cache/$T/pe_sections.bin >> "$LOG" 2>&1 &
+    BO2_INTERP_VAS="$PWD/runs/interp_vas_$T.txt" "$@" ./boot_cache/$T/boot boot_cache/$T/pe_sections.bin >> "$LOG" 2>&1 &
 PID=$!
 caffeinate -dimsu -w "$PID" >/dev/null 2>&1 &
 echo "[CAFFEINE] caffeinate -dimsu -w $PID" >> "$LOG"
