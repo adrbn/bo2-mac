@@ -2,7 +2,7 @@
 # build_remill.sh — patched Remill v6.0.1 (~12 min the first time, ~0.7 GB). Used by build_steam.sh.
 set -eu
 cd "$(dirname "$0")/.."
-ROOT=$PWD; BC=boot_cache; R=tools/remill-src; J=${J:-2}
+ROOT=$PWD; BC=boot_cache; R=${REMILL_SRC:-tools/remill-src}; J=${J:-2}   # REMILL_SRC: build elsewhere (scripts/make_toolchain.sh)
 [ ! -x $R/build/bin/lift/remill-lift-17 ] || [ ! -f $R/build/lib/Arch/X86/Runtime/x86.bc ] || exit 0
 [ -d $R/.git ] || git clone -q --depth 1 --branch v6.0.1 https://github.com/lifting-bits/remill $R
 for p in tools/remill-patches/*.patch; do

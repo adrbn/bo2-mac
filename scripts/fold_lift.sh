@@ -15,7 +15,7 @@
 set -u -o pipefail
 cd "$(dirname "$0")/.."
 export LC_ALL=C
-L=/opt/homebrew/opt/llvm@17/bin
+L=${LLVM17:-/opt/homebrew/opt/llvm@17}/bin
 W=${BOOT_WORKDIR:?set BOOT_WORKDIR to the lift folder, as scripts/build_steam.sh does}
 OUT=${W%_vm}_fold
 PAR="${1:-2}"

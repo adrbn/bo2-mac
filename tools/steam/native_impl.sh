@@ -4,7 +4,7 @@
 # À relancer après toute reconstruction de lifted.o.
 set -e
 cd "$(dirname $0)/../.."
-T=$1; W=boot_cache/$T/natif; L=/opt/homebrew/opt/llvm@17/bin; mkdir -p $W; O=boot_cache/$T/lifted.o
+T=$1; W=boot_cache/$T/natif; L=${LLVM17:-/opt/homebrew/opt/llvm@17}/bin; mkdir -p $W; O=boot_cache/$T/lifted.o
 case $T in
   sps) TOUS=(47b080 47b4e0 47ba60 47c110) ;;
   mps) TOUS=(59a120 459800 459ce0 45a150 47ab10 47af70 47b4f0 47bba0) ;;

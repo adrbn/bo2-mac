@@ -21,12 +21,19 @@ veille(){ local log=$1 p; shift; "$@" > "$log" 2>&1 & p=$!
     [ $(( $(date +%s) - $(stat -f %m "$log") )) -lt ${VEILLE_S:-2700} ] || { pile $p; tue $p; wait $p; return 124; }; done
   wait $p; }
 garde(){ [ "$(libre)" -ge 8 ] || die "less than 8 GB free ($(libre)): free up some space, then run again (it resumes)"; }
-for d in llvm@17 cmake ninja libvpx unicorn; do [ -d /opt/homebrew/opt/$d ] || die "missing: brew install $d"; done
+if [ -n "${BO2_TOOLCHAIN:-}" ]; then   # the app's prebuilt tools (scripts/make_toolchain.sh): Apple's Command Line Tools only
+  xcrun --show-sdk-path >/dev/null 2>&1 || { xcode-select --install 2>/dev/null; die "missing: Command Line Tools"; }
+  export LLVM17=$BO2_TOOLCHAIN/llvm@17 PYTHONPATH=$BO2_TOOLCHAIN/python SDKROOT=${SDKROOT:-$(xcrun --show-sdk-path)} \
+         REMILL_SEMANTICS_DIR=$BO2_TOOLCHAIN/remill/build/lib/Arch/X86/Runtime
+else
+  for d in llvm@17 cmake ninja libvpx unicorn; do [ -d /opt/homebrew/opt/$d ] || die "missing: brew install $d"; done
+fi
 python3 -c "import capstone" 2>/dev/null || die "missing: pip3 install capstone"
 mkdir -p $BC; garde
 say "0 %  Remill"
-bash scripts/build_remill.sh || die "Remill build failed (see $BC/remill.log)"
+[ -n "${BO2_TOOLCHAIN:-}" ] || bash scripts/build_remill.sh || die "Remill build failed (see $BC/remill.log)"
 say "10 %  Remill ready"
+[ -s $BC/hlslcc_build/libhlslcc.dylib ] || [ -z "${BO2_TOOLCHAIN:-}" ] || { mkdir -p $BC/hlslcc_build; cp "$BO2_TOOLCHAIN/hlslcc/libhlslcc.dylib" $BC/hlslcc_build/; }
 [ -s $BC/hlslcc_build/libhlslcc.dylib ] || {
   cmake -S third_party/HLSLcc -B $BC/hlslcc_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5 > /dev/null \
