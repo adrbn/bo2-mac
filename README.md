@@ -263,8 +263,15 @@ flattering conclusion. This is one game, months of work and heavy manual interve
 
 ## Install
 
-You need an Apple silicon Mac, macOS 14 or later, at least **20 GB free** (the conversion peaks at about 10 GB and about
-4 GB stays), Homebrew, and Steam for Mac signed in to the account that owns the game.
+You need an Apple silicon Mac, at least **20 GB free** (the conversion peaks at about 10 GB and about 4 GB stays), and
+Steam for Mac signed in to the account that owns the game.
+
+**macOS 26 or later: no Terminal.** Download `Black Ops II.app` from the [releases](https://github.com/adrbn/bo2-mac/releases)
+and open it. It carries its own translation tools (LLVM 17, Remill, Unicorn, libvpx, HLSLcc, capstone, built by
+[scripts/make_toolchain.sh](scripts/make_toolchain.sh)) and no game file. The first time, macOS offers to install
+Apple's free Command Line Tools: click "Install", then "Try Again" in the app's window.
+
+**macOS 14 or 15: from the Terminal**, with Homebrew:
 
 ```bash
 git clone https://github.com/adrbn/bo2-mac.git && cd bo2-mac
@@ -352,9 +359,11 @@ For a copy the user owns, on hardware the user owns.
   Activision server is contacted, there is no online play, and game ownership is still checked by the player's Steam.
   The match rules were written in a clean room.
 - The code written here is licensed under GPL-3.0 ([LICENSE](LICENSE)).
-- Unicorn (GPL-2.0) is linked statically from Homebrew when you build ([tools/boot.py](tools/boot.py)). GPL-2.0 and
-  GPL-3.0 code cannot be shipped together in one binary, so the prebuilt tools of roadmap step 2 cannot embed Unicorn
-  as it is linked today. Building from source on your own Mac is not affected.
+- Unicorn (GPL-2.0) is never combined with GPL-3.0 code in a distributed binary. The app carries Unicorn's unmodified
+  library as a separate file next to the other tools; it is linked into the game binary on the player's own Mac
+  ([tools/boot.py](tools/boot.py)), and that binary is never distributed. Each release publishes the source of the
+  exact Unicorn version it carries (`unicorn-<version>-source.tar.gz`), as GPL-2.0 requires. The licenses of every
+  carried tool are in the app, in `Contents/Resources/toolchain/licenses`.
 
 This is an unofficial fan project. Call of Duty and Black Ops are trademarks of Activision Publishing, Inc. Steam is a
 trademark of Valve Corporation. This project is not affiliated with, endorsed by or sponsored by Activision, Treyarch,

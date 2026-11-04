@@ -66,17 +66,21 @@ install_name_tool -add_rpath @loader_path/../../../../llvm@17/lib "$R/bin/lift/r
 for f in $(macho); do codesign -s - -f "$f" 2>/dev/null; done   # install_name_tool voids signatures (make_app.sh re-signs)
 
 cp $L/LICENSE.TXT "$OUT/licenses/LLVM.txt"; cp $B/libvpx/LICENSE "$OUT/licenses/libvpx.txt"
+# Unicorn's source, for the release next to the app (GPL-2.0 section 3: the object code ships with its source).
+UV=$(basename "$(readlink $B/unicorn)")   # ../Cellar/unicorn/<version>
+brew fetch -q -s unicorn >/dev/null && cp "$(brew --cache -s unicorn)" "$(dirname "$OUT")/unicorn-$UV-source.tar.gz"
 cp $B/unicorn/COPYING "$OUT/licenses/unicorn-GPL-2.0.txt"; cp $B/zstd/LICENSE "$OUT/licenses/zstd.txt" 2>/dev/null || true
 cp $RS/LICENSE "$OUT/licenses/remill.txt"; cp third_party/HLSLcc/license.txt "$OUT/licenses/HLSLcc.txt"
 cat > "$OUT/licenses/README.txt" <<EOF
 Third-party tools carried by Black Ops II.app, each under its own license (files next to this one):
 LLVM 17.0.6 (Apache-2.0 WITH LLVM-exception), Remill v6.0.1 + tools/remill-patches (Apache-2.0; statically includes
 Intel XED, Apache-2.0, and glog/gflags, BSD-3-Clause), HLSLcc (MIT), libvpx (BSD-3-Clause), zstd (BSD-3-Clause),
-capstone 5.0.7 (BSD-3-Clause), Unicorn 2 (GPL-2.0, library only: linked on the player's Mac into a binary that is
-never distributed). Sources: https://github.com/llvm/llvm-project/tree/llvmorg-17.0.6,
+capstone 5.0.7 (BSD-3-Clause), Unicorn $UV (GPL-2.0, library only: linked on the player's Mac into a binary that is
+never distributed; its source, unicorn-$UV-source.tar.gz, is published with each release). Sources:
+https://github.com/llvm/llvm-project/tree/llvmorg-17.0.6,
 https://github.com/lifting-bits/remill/tree/v6.0.1, https://github.com/webmproject/libvpx,
 https://github.com/facebook/zstd, https://github.com/capstone-engine/capstone/tree/5.0.7,
-https://github.com/unicorn-engine/unicorn (version: $(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' $B/unicorn/INSTALL_RECEIPT.json | head -1)).
+https://github.com/unicorn-engine/unicorn/tree/$UV.
 EOF
 
 # Gates: nothing left pointing at this Mac's Homebrew or home folder, and the tools start.
@@ -87,4 +91,4 @@ NEW=$(for f in $(macho); do v=$(minos "$f"); [ -z "$v" ] || [ "$(printf '%s\n' $
 [ -z "$NEW" ] || { echo "built for a newer macOS than $MACOSX_DEPLOYMENT_TARGET: $NEW"; exit 1; }
 "$T/bin/clang" --version | head -1 && "$T/bin/opt" --version | grep -m1 version
 "$R/bin/lift/remill-lift-17" --help 2>&1 | grep -q -- -serve || { echo "remill-lift does not start"; exit 1; }
-echo "$OUT: $(du -sh "$OUT" | cut -f1)"
+echo "$OUT: $(du -sh "$OUT" | cut -f1)  (release asset: $(dirname "$OUT")/unicorn-$UV-source.tar.gz)"
