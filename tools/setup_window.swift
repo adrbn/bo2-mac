@@ -10,6 +10,11 @@ import SwiftUI
 let args = CommandLine.arguments
 // setup_window.swift --accueil: the welcome window, before anything runs (make_app.sh): where the game folder is, and
 // whether the three prepared exes are in ~/.bo2-native/steam. Prints the folder on stdout and exits 0; 1 = closed.
+// setup_window.swift --icone <png>: draws our neutral mark (1024 px), make_app.sh's AppIcon. Never the game's logo.
+if args.count == 3 && args[1] == "--icone" {
+    exit(marque().tiffRepresentation.flatMap { NSBitmapImageRep(data: $0)?.representation(using: .png, properties: [:]) }
+        .map { (try? $0.write(to: URL(fileURLWithPath: args[2]))) != nil } == true ? 0 : 1)
+}
 let accueil = args.count == 2 && args[1] == "--accueil"
 let maison = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()   // the launcher's $HOME (NSHomeDirectory ignores it)
 guard accueil || (args.count == 3 && pid_t(args[2]) != nil) else { exit(2) }
@@ -566,7 +571,7 @@ struct VueBienvenue: View {
                     Image(systemName: "checkmark.circle.fill").font(.system(size: 26)).foregroundStyle(orange)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(t(b.trouve ? "a_trouve" : "a_choisi")).font(.system(size: 15, weight: .semibold))
-                        Text(d.replacingOccurrences(of: maison, with: "~")).font(.system(size: 12, design: .monospaced))
+                        Text(d.replacingOccurrences(of: maison, with: "~")).font(.system(size: 12))
                             .foregroundStyle(.white.opacity(0.6)).lineLimit(1).truncationMode(.middle)
                     }
                     Spacer()
@@ -605,7 +610,7 @@ struct VueBienvenue: View {
                 HStack(spacing: 10) {
                     Image(systemName: e == .pret ? "checkmark.circle.fill" : e == .enveloppe ? "exclamationmark.circle.fill" : "circle.dashed")
                         .foregroundStyle(e == .absent ? .white.opacity(0.35) : orange)
-                    Text(Bienvenue.noms[i]).font(.system(size: 13, design: .monospaced))
+                    Text(Bienvenue.noms[i]).font(.system(size: 13))
                         .foregroundStyle(.white.opacity(e == .pret ? 0.85 : 0.5))
                 }
             }
@@ -626,9 +631,27 @@ struct VueBienvenue: View {
     }
 }
 
+// The mark shown until the game's icon is read from its t6sp.exe: a controller on the window's dark orange, ours.
+func marque() -> NSImage {
+    let c = 1024.0, r = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(c), pixelsHigh: Int(c), bitsPerSample: 8,
+                                         samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: r)
+    let fond = NSBezierPath(roundedRect: NSRect(x: 100, y: 100, width: 824, height: 824), xRadius: 185, yRadius: 185)
+    NSGradient(colors: [NSColor(red: 0.30, green: 0.12, blue: 0.04, alpha: 1), NSColor(red: 0.04, green: 0.03, blue: 0.03, alpha: 1)])!
+        .draw(in: fond, angle: -90)
+    let conf = NSImage.SymbolConfiguration(pointSize: 400, weight: .regular)
+        .applying(NSImage.SymbolConfiguration(paletteColors: [NSColor(red: 1, green: 0.47, blue: 0.12, alpha: 1)]))
+    if let m = NSImage(systemSymbolName: "gamecontroller.fill", accessibilityDescription: nil)?.withSymbolConfiguration(conf) {
+        m.draw(in: NSRect(x: (c - m.size.width) / 2, y: (c - m.size.height) / 2, width: m.size.width, height: m.size.height))
+    }
+    NSGraphicsContext.restoreGraphicsState()
+    let i = NSImage(size: NSSize(width: 512, height: 512)); i.addRepresentation(r); return i
+}
+
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)
-if let icone = NSImage(contentsOfFile: dossier + "/icon.png") { app.applicationIconImage = icone }
+app.applicationIconImage = NSImage(contentsOfFile: dossier + "/icon.png") ?? marque()   // never the empty or folder icon
 let modele = Modele()
 let bienvenue = accueil ? Bienvenue() : nil
 let win = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)

@@ -45,6 +45,11 @@ mkdir -p "$B"
 (cd "$ICI" && git ls-files -z | tar --null -T - -cf -) | tar -xf - -C "$B"   # macOS rsync has no --from0
 [ ! -d "$TC" ] || ditto "$TC" "$APP/Contents/Resources/toolchain"
 swiftc -O -target arm64-apple-macos$MINOS -o "$APP/Contents/MacOS/preparation" "$ICI/tools/setup_window.swift"
+I="$(mktemp -d)/AppIcon.iconset"; mkdir -p "$I"   # our neutral mark until the player's t6sp.exe gives the game's icon
+"$APP/Contents/MacOS/preparation" --icone "$I/icon_512x512@2x.png"
+for s in 16 32 128 256 512; do sips -z $s $s "$I/icon_512x512@2x.png" --out "$I/icon_${s}x${s}.png" >/dev/null
+  [ $s = 512 ] || sips -z $((s * 2)) $((s * 2)) "$I/icon_512x512@2x.png" --out "$I/icon_${s}x${s}@2x.png" >/dev/null; done
+iconutil -c icns "$I" -o "$APP/Contents/Resources/AppIcon.icns"
 # The bundle's executable is a Mach-O that runs Resources/launcher.sh: the notary service signs and checks Mach-O.
 printf '%s\n' '#include <libgen.h>' '#include <mach-o/dyld.h>' '#include <stdio.h>' '#include <unistd.h>' \
   'int main(void) { char p[4096], s[4200]; uint32_t n = sizeof p; if (_NSGetExecutablePath(p, &n)) return 1;' \
