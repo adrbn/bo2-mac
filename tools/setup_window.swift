@@ -239,28 +239,30 @@ struct BoutonVerre: ButtonStyle {
     }
 }
 
-// One segment per step, filled with the step's share of the percentage. All the filled length is one gradient,
-// masked by the segments; a soft wave runs along the running step, so it visibly moves even while the step
-// prints nothing for half an hour.
+// One segment per step, filled with the step's share of the percentage, orange to light orange along the whole bar;
+// a soft wave runs along the running step, so it visibly moves even while the step prints nothing for half an hour.
+// No mask: a mask first drawn with nothing filled (window opened at 0 %) was never applied again, and the whole
+// gradient showed as one full bar.
 struct Segments: View {
     let pct: Double; let indice: Int
     let ecart: CGFloat = 8
     func part(_ i: Int) -> Double { min(max((pct - etapes[i].debut) / (etapes[i].fin - etapes[i].debut), 0), 1) }
+    func teinte(_ x: Double) -> Color { Color(red: 1, green: 0.47 + 0.23 * x, blue: 0.12 + 0.18 * x) }   // x: 0…1 along the bar
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack {
                 HStack(spacing: ecart) { ForEach(etapes.indices, id: \.self) { _ in Capsule().fill(.white.opacity(0.12)) } }
                 GeometryReader { g in
-                    let l = (g.size.width - ecart * CGFloat(etapes.count - 1)) / CGFloat(etapes.count)
-                    LinearGradient(colors: [orange, Color(red: 1, green: 0.7, blue: 0.3)], startPoint: .leading, endPoint: .trailing)
-                        .mask(alignment: .leading) {
-                            HStack(spacing: ecart) {
-                                ForEach(etapes.indices, id: \.self) { i in
-                                    Capsule().frame(width: l * part(i)).frame(width: l, alignment: .leading)
-                                }
-                            }
+                    let l = max(0, (g.size.width - ecart * CGFloat(etapes.count - 1)) / CGFloat(etapes.count))
+                    let n = Double(etapes.count)
+                    HStack(spacing: ecart) {
+                        ForEach(etapes.indices, id: \.self) { i in
+                            let x = Double(i) / n, fin = x + part(i) / n
+                            Capsule().fill(LinearGradient(colors: [teinte(x), teinte(fin)], startPoint: .leading, endPoint: .trailing))
+                                .frame(width: l * part(i)).frame(width: l, alignment: .leading)
                         }
-                        .shadow(color: orange.opacity(0.6), radius: 5)
+                    }
+                    .shadow(color: orange.opacity(0.6), radius: 5)
                     if indice < etapes.count {   // a soft wave runs along the running step only
                         let large = l * part(indice)
                         TimelineView(.animation(minimumInterval: 1.0 / 30)) { tl in
