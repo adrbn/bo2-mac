@@ -61,24 +61,19 @@ W="$HOME/.bo2-native/app-local"
 exec >> "$HOME/Library/Logs/BlackOpsII.log" 2>&1
 export PATH="$PATH:/opt/homebrew/bin"   # launched by Finder: no Homebrew cmake/ninja; appended, so python3 stays the one that passed the capstone check
 echo "--- $(date +%H:%M:%S) bundle $(cat "$R/version")"
-case "$(defaults read -g AppleLanguages 2>/dev/null | tr -dc 'a-zA-Z-\n' | sed -n 2p | cut -c1-2)" in   # folder prompt, no exe, copy failed
-  fr) T1="Choisissez le dossier de Black Ops II (celui qui contient t6sp.exe)"; T2="Aucun t6sp.exe dans"; T3="Copie impossible vers";;
-  de) T1="Wählen Sie den Ordner von Black Ops II (der t6sp.exe enthält)"; T2="Keine t6sp.exe in"; T3="Kopieren nicht möglich nach";;
-  es) T1="Elija la carpeta de Black Ops II (la que contiene t6sp.exe)"; T2="No hay t6sp.exe en"; T3="No se puede copiar a";;
-  it) T1="Scelga la cartella di Black Ops II (quella che contiene t6sp.exe)"; T2="Nessun t6sp.exe in"; T3="Impossibile copiare in";;
-  pt) T1="Escolha a pasta do Black Ops II (a que contém o t6sp.exe)"; T2="Nenhum t6sp.exe em"; T3="Não foi possível copiar para";;
-  pl) T1="Folder Black Ops II (zawierający t6sp.exe)"; T2="Brak t6sp.exe w"; T3="Nie można skopiować do";;
-  ru) T1="Выберите папку Black Ops II (в которой лежит t6sp.exe)"; T2="Нет t6sp.exe в"; T3="Не удалось скопировать в";;
-  ja) T1="Black Ops IIのフォルダ（t6sp.exeがあるフォルダ）を選択してください"; T2="t6sp.exeが見つかりません:"; T3="コピーできません:";;
-  *)  T1="Choose the Black Ops II folder (the one containing t6sp.exe)"; T2="No t6sp.exe in"; T3="Cannot copy to";;
+case "$(defaults read -g AppleLanguages 2>/dev/null | tr -dc 'a-zA-Z-\n' | sed -n 2p | cut -c1-2)" in   # copy failed
+  fr) T3="Copie impossible vers";;
+  de) T3="Kopieren nicht möglich nach";;
+  es) T3="No se puede copiar a";;
+  it) T3="Impossibile copiare in";;
+  pt) T3="Não foi possível copiar para";;
+  pl) T3="Nie można skopiować do";;
+  ru) T3="Не удалось скопировать в";;
+  ja) T3="コピーできません:";;
+  *)  T3="Cannot copy to";;
 esac
 alerte() { osascript -e "display alert \"Black Ops II\" message \"$1\"" >/dev/null; exit 1; }
 G="$HOME/.bo2-native/game_dir"; [ -s "$G" ] || [ ! -s "$HOME/.bo2-native/jeu" ] || G="$HOME/.bo2-native/jeu"   # older name
-if [ ! -s "$G" ]; then
-  J=$(osascript -e "POSIX path of (choose folder with prompt \"$T1\")") || exit 1
-  J="${J%/}"; [ -f "$J/t6sp.exe" ] || alerte "$T2 $J"
-  mkdir -p "$HOME/.bo2-native" && printf '%s\n' "$J" > "$G"
-fi
 if ! cmp -s "$R/version" "$W/.version"; then
   echo "working copy -> $W"
   mkdir -p "$W" && ditto --clone "$R/bo2" "$W" && cp "$R/version" "$W/.version" || alerte "$T3 $W"
@@ -88,6 +83,12 @@ fi
 [ ! -d "$R/toolchain" ] || { ln -sfn "$R/toolchain" "$W/.toolchain" && export BO2_TOOLCHAIN="$W/.toolchain"; }
 mkdir -p "$W/boot_cache" && echo "${R%/Contents/Resources}" > "$W/boot_cache/app_path"   # reopened by play_steam.sh
 C=$(cat "$W/boot_cache/conversion_target" 2>/dev/null); case "$C" in sps|zms) ;; *) C=mps ;; esac   # the modes asked for (issue #3)
+# Welcome window: the game folder and the three prepared exes, before anything runs (tools/setup_window.swift --accueil).
+X=0; for e in t6sp t6mp t6zm; do [ -s "$HOME/.bo2-native/steam/$e.exe.unpacked.exe" ] || X=1; done
+if [ ! -s "$G" ] || { [ $X = 1 ] && [ ! -x "$W/boot_cache/$C/boot" ]; }; then
+  J=$("$R/../MacOS/preparation" --accueil) && [ -n "$J" ] || exit 0   # window closed
+  mkdir -p "$HOME/.bo2-native" && printf '%s\n' "$J" > "$G"
+fi
 if [ -f "$R/from-source" ] && [ ! -x "$W/boot_cache/$C/boot" ]; then   # first launch: translate the player's t6sp.exe
   [ -s "$W/icon.png" ] || { python3 "$W/tools/exe_icon.py" "$(cat "$G")/t6sp.exe" "$W/icon.ico" \
     && sips -s format png "$W/icon.ico" --out "$W/icon.png" >/dev/null && bash "$W/scripts/icon_margin.sh" "$W/icon.png"; } || true
