@@ -2,7 +2,7 @@
 // rereads the last "[prepare] NN %  step" line of the build_steam.sh log and shows the four steps, the time left
 // and the battery state, in the Mac's language (9 languages, English otherwise). Exit codes read by the launcher:
 // 0 = "Play" (boot built), 3 = "Try Again" (build_steam.sh resumes where it stopped), 1 = window closed (the
-// preparation keeps going). The icon is the one the launcher read from the player's t6sp.exe (<log folder>/icon.png).
+// preparation keeps going). The icon is the one read from the player's t6sp.exe (<log folder>/icon.png), else the app's own.
 import AppKit
 import IOKit.ps
 import SwiftUI
@@ -330,9 +330,10 @@ func ticket(_ raison: String) -> URL {
 
 struct Entete: View {
     let texte: String
+    var icone: NSImage = NSApp.applicationIconImage
     var body: some View {
         HStack(spacing: 20) {
-            Image(nsImage: NSApp.applicationIconImage).resizable().interpolation(.high)
+            Image(nsImage: icone).resizable().interpolation(.high)
                 .frame(width: 76, height: 76)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(color: orange.opacity(0.55), radius: 22)
@@ -473,12 +474,21 @@ enum EtatExe { case absent, enveloppe, pret }
 final class Bienvenue: ObservableObject {
     static let steam = maison + "/.bo2-native/steam"
     static let noms = ["t6sp.exe.unpacked.exe", "t6mp.exe.unpacked.exe", "t6zm.exe.unpacked.exe"]
-    @Published var jeu: String?          // the game folder
+    @Published var jeu: String? { didSet { if let j = jeu { icone(j) } } }   // the game folder
     @Published var trouve = false        // found on its own: confirmed in one click
     @Published var refus: String?        // the folder given has no t6sp.exe
     @Published var exes: [EtatExe] = []
+    @Published var icone: NSImage?       // the game's, once read from its t6sp.exe
     var pret: Bool { jeu != nil && exes.allSatisfy { $0 == .pret } }
-    init() { jeu = chercher(); trouve = jeu != nil; verifier() }
+    init() { jeu = chercher(); trouve = jeu != nil; verifier(); if let j = jeu { icone(j) } }
+
+    // The game's icon, read from its t6sp.exe as soon as the folder is known, in place of the app's own.
+    private func icone(_ d: String) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/bash")
+        p.arguments = [dossier + "/scripts/game_icon.sh", d]
+        try? p.run()   // verifier() picks up icon.png
+    }
 
     // Same test as install_steam.sh.
     static func valide(_ d: String) -> Bool {
@@ -514,6 +524,7 @@ final class Bienvenue: ObservableObject {
             return debut.isEmpty ? .absent : debut.range(of: Data(".bind".utf8)) != nil ? .enveloppe : .pret
         }
         if e != exes { exes = e }
+        if icone == nil, let i = NSImage(contentsOfFile: dossier + "/icon.png") { icone = i; NSApp.applicationIconImage = i }
     }
     func parcourir() {
         let p = NSOpenPanel()
@@ -527,7 +538,7 @@ struct VueBienvenue: View {
     @State private var survol = false
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Entete(texte: t("sous_titre"))
+            Entete(texte: t("sous_titre"), icone: b.icone ?? NSApp.applicationIconImage)   // the getter keeps its old object
             panneauJeu
             panneauExes
             HStack {

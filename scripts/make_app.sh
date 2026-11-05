@@ -84,14 +84,14 @@ fi
 mkdir -p "$W/boot_cache" && echo "${R%/Contents/Resources}" > "$W/boot_cache/app_path"   # reopened by play_steam.sh
 C=$(cat "$W/boot_cache/conversion_target" 2>/dev/null); case "$C" in sps|zms) ;; *) C=mps ;; esac   # the modes asked for (issue #3)
 # Welcome window: the game folder and the three prepared exes, before anything runs (tools/setup_window.swift --accueil).
+[ ! -s "$G" ] || bash "$W/scripts/game_icon.sh" "$(cat "$G")" || true   # the game's icon in the window, when the folder is known
 X=0; for e in t6sp t6mp t6zm; do [ -s "$HOME/.bo2-native/steam/$e.exe.unpacked.exe" ] || X=1; done
 if [ ! -s "$G" ] || { [ $X = 1 ] && [ ! -x "$W/boot_cache/$C/boot" ]; }; then
   J=$("$R/../MacOS/preparation" --accueil) && [ -n "$J" ] || exit 0   # window closed
   mkdir -p "$HOME/.bo2-native" && printf '%s\n' "$J" > "$G"
 fi
 if [ -f "$R/from-source" ] && [ ! -x "$W/boot_cache/$C/boot" ]; then   # first launch: translate the player's t6sp.exe
-  [ -s "$W/icon.png" ] || { python3 "$W/tools/exe_icon.py" "$(cat "$G")/t6sp.exe" "$W/icon.ico" \
-    && sips -s format png "$W/icon.ico" --out "$W/icon.png" >/dev/null && bash "$W/scripts/icon_margin.sh" "$W/icon.png"; } || true
+  bash "$W/scripts/game_icon.sh" "$(cat "$G")" || true
   while :; do
     P=$(cat "$W/preparation.pid" 2>/dev/null) || true
     if [ -z "$P" ] || ! kill -0 "$P" 2>/dev/null; then            # a preparation already running: just show it
