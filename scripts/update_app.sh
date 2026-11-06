@@ -4,7 +4,8 @@
 # checks it is signed by team 2TWQF4T93E and notarized, and puts it in the app's place. "Install, keep this version"
 # first renames the app "<name> <its tag>.app": opening that one goes back (the launcher relinks, scripts/signature.sh).
 # A test build is offered test releases, a full release only full releases; an app whose tag is not published (a build
-# not yet released) is offered nothing. Status 10: installed, the launcher opens the new app; else go on as before.
+# not yet released) is offered nothing. The dialog lists what is new: the bullets under "New since …:" in the notes of
+# each release the player would skip to, newest first, 8 at most. Status 10: installed, the launcher opens the new app.
 # Tests: BO2_UPDATE_API (the release list, file:// works), BO2_UPDATE_ANSWER=later|keep|install (no dialog).
 A=$1; CUR=$(cat "$A/Contents/Resources/release" 2>/dev/null) || exit 0
 ST="$HOME/.bo2-native/update_checked"
@@ -12,18 +13,28 @@ ST="$HOME/.bo2-native/update_checked"
 D=$(mktemp -d "${TMPDIR:-/tmp}/bo2-update.XXXXXX") || exit 0; trap 'rm -rf "$D"' EXIT
 curl -fsSL -m 8 -o "$D/l.json" "${BO2_UPDATE_API:-https://api.github.com/repos/adrbn/bo2-mac/releases?per_page=20}" || exit 0
 mkdir -p "$HOME/.bo2-native" && touch "$ST"
-# The newest release after ours on our channel, with its zip: tag, zip URL, title, page.
+# The newest release after ours on our channel, with its zip: tag, zip URL, title, page, then what is new.
 R=$(osascript -l JavaScript - "$CUR" "$D/l.json" <<'EOF'
 function run(a) {
   ObjC.import('Foundation')
   const L = JSON.parse($.NSString.stringWithContentsOfFileEncodingError(a[1], $.NSUTF8StringEncoding, null).js).filter(r => !r.draft)
   const i = L.findIndex(r => r.tag_name === a[0]); if (i < 0) return ''
-  const n = L.slice(0, i).find(r => L[i].prerelease || !r.prerelease); if (!n) return ''
-  const z = n.assets.find(x => x.name === 'bo2-mac.zip'); return z ? [n.tag_name, z.browser_download_url, n.name, n.html_url].join('\n') : ''
+  const M = L.slice(0, i).filter(r => L[i].prerelease || !r.prerelease), n = M[0]; if (!n) return ''
+  const z = n.assets.find(x => x.name === 'bo2-mac.zip'); if (!z) return ''
+  const neuf = r => { const o = []; let on = false
+    for (const l of (r.body || '').split(/\r?\n/)) {
+      if (/^New since\b/i.test(l)) on = true
+      else if (on && /^\s*[-*] /.test(l)) o.push('• ' + l.replace(/^\s*[-*] /, '').replace(/\*\*|`/g, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1'))
+      else if (l.trim()) on = false }
+    return o }
+  return [n.tag_name, z.browser_download_url, n.name, n.html_url, ...M.flatMap(neuf).slice(0, 8)].join('\n')
 }
 EOF
 ) && [ -n "$R" ] || exit 0
 NEW=$(sed -n 1p <<< "$R"); URL=$(sed -n 2p <<< "$R"); NAME=$(sed -n 3p <<< "$R"); PAGE=$(sed -n 4p <<< "$R")
+NOTES=$(sed -n '5,$p' <<< "$R"); [ -z "$NOTES" ] || NOTES="
+
+$NOTES"
 case "$(defaults read -g AppleLanguages 2>/dev/null | tr -dc 'a-zA-Z-\n' | sed -n 2p | cut -c1-2)" in
   fr) Q="Une nouvelle version de Black Ops II est sortie :"; Q2="Seul ce qu'elle change est reconverti."; L="Plus tard"
       K="Installer, garder celle-ci"; I="Installer"; T="Téléchargement…"; X="La mise à jour n'a pas pu être installée. Elle s'ouvre dans votre navigateur.";;
@@ -46,7 +57,7 @@ case "$(defaults read -g AppleLanguages 2>/dev/null | tr -dc 'a-zA-Z-\n' | sed -
 esac
 B=${BO2_UPDATE_ANSWER:-$(osascript - "$Q
 
-$NAME
+$NAME$NOTES
 
 $Q2" "$L" "$K" "$I" <<'EOF'
 on run a
