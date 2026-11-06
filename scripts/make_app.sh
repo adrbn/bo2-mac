@@ -79,7 +79,8 @@ case "$(defaults read -g AppleLanguages 2>/dev/null | tr -dc 'a-zA-Z-\n' | sed -
 esac
 alerte() { osascript -e "display alert \"Black Ops II\" message \"$1\"" >/dev/null; exit 1; }
 G="$HOME/.bo2-native/game_dir"; [ -s "$G" ] || [ ! -s "$HOME/.bo2-native/jeu" ] || G="$HOME/.bo2-native/jeu"   # older name
-if ! cmp -s "$R/version" "$W/.version"; then
+E=$(cat "$W/preparation.pid" 2>/dev/null) || true   # a conversion running: its sources stay, the copy waits for the next launch
+if ! cmp -s "$R/version" "$W/.version" && { [ -z "$E" ] || ! kill -0 "$E" 2>/dev/null; }; then
   echo "working copy -> $W"
   mkdir -p "$W" && ditto --clone "$R/bo2" "$W" && cp "$R/version" "$W/.version" || alerte "$T3 $W"
 fi
@@ -95,7 +96,8 @@ if [ ! -s "$G" ] || { [ $X = 1 ] && [ ! -x "$W/boot_cache/$C/boot" ]; }; then
   J=$("$R/../MacOS/preparation" --accueil) && [ -n "$J" ] || exit 0   # window closed
   mkdir -p "$HOME/.bo2-native" && printf '%s\n' "$J" > "$G"
 fi
-if [ -f "$R/from-source" ] && [ ! -x "$W/boot_cache/$C/boot" ]; then   # first launch: translate the player's t6sp.exe
+# First launch: translate the player's exes. After an update, again what its sources changed (scripts/signature.sh).
+if [ -f "$R/from-source" ] && { [ ! -x "$W/boot_cache/$C/boot" ] || ! bash "$W/scripts/signature.sh" check; }; then
   bash "$W/scripts/game_icon.sh" "$(cat "$G")" || true
   while :; do
     P=$(cat "$W/preparation.pid" 2>/dev/null) || true
