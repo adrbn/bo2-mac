@@ -13,7 +13,8 @@
 # folder), the bundle carries it (LLVM 17, Remill, libvpx, Unicorn, HLSLcc, capstone) and the player only needs Apple's
 # Command Line Tools, which the preparation window asks macOS to install.
 # Release: BO2_SIGN="Developer ID Application" signs every binary with the hardened runtime (team 2TWQF4T93E), and
-# BO2_NOTARY=<notarytool keychain profile> then has Apple notarize the bundle and staples the ticket.
+# BO2_NOTARY=<notarytool keychain profile> then has Apple notarize the bundle and staples the ticket. BO2_RELEASE=<tag
+# of the GitHub release it is built for>: the app offers the newer releases at launch (scripts/update_app.sh).
 set -eu
 ICI="$(cd "$(dirname "$0")/.." && pwd)"
 [ "${1:-}" = --from-source ] && shift
@@ -57,6 +58,7 @@ printf '%s\n' '#include <libgen.h>' '#include <mach-o/dyld.h>' '#include <stdio.
   | clang -O2 -mmacosx-version-min=$MINOS -x c -o "$APP/Contents/MacOS/BlackOpsII" -
 touch "$APP/Contents/Resources/from-source"
 echo "$(date '+%Y-%m-%d %H:%M:%S') $(git -C "$ICI" rev-parse --short HEAD)" > "$APP/Contents/Resources/version"
+[ -z "${BO2_RELEASE:-}" ] || echo "$BO2_RELEASE" > "$APP/Contents/Resources/release"
 
 cat > "$APP/Contents/Resources/launcher.sh" <<'EOF'
 #!/bin/bash
@@ -80,6 +82,11 @@ esac
 alerte() { osascript -e "display alert \"Black Ops II\" message \"$1\"" >/dev/null; exit 1; }
 G="$HOME/.bo2-native/game_dir"; [ -s "$G" ] || [ ! -s "$HOME/.bo2-native/jeu" ] || G="$HOME/.bo2-native/jeu"   # older name
 E=$(cat "$W/preparation.pid" 2>/dev/null) || true   # a conversion running: its sources stay, the copy waits for the next launch
+# A newer release, at most once a day and never during a conversion: installed in the app's place on the player's yes,
+# then opened (scripts/update_app.sh).
+if [ -z "$E" ] || ! kill -0 "$E" 2>/dev/null; then
+  bash "$R/bo2/scripts/update_app.sh" "${R%/Contents/Resources}"; [ $? != 10 ] || exec open -n "${R%/Contents/Resources}"
+fi
 if ! cmp -s "$R/version" "$W/.version" && { [ -z "$E" ] || ! kill -0 "$E" 2>/dev/null; }; then
   echo "working copy -> $W"
   mkdir -p "$W" && ditto --clone "$R/bo2" "$W" && cp "$R/version" "$W/.version" || alerte "$T3 $W"

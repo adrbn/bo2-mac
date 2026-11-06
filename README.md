@@ -270,6 +270,8 @@ Steam for Mac signed in to the account that owns the game.
 and open it. It carries its own translation tools (LLVM 17, Remill, Unicorn, libvpx, HLSLcc, capstone, built by
 [scripts/make_toolchain.sh](scripts/make_toolchain.sh)) and no game file. The first time, macOS offers to install
 Apple's free Command Line Tools: click "Install", then "Try Again" in the app's window.
+Once a day at launch, the app looks for a newer release and offers to install it. "Install, keep this version" keeps
+the current app beside it, renamed with its version, so opening that one goes back.
 
 **macOS 14 or 15: from the Terminal**, with Homebrew:
 
