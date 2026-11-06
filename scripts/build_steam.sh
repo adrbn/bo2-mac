@@ -53,10 +53,12 @@ for spec in "sps 9211 t6sp" "zms 12533 t6zm" "mps 12664 t6mp"; do
   set -- $spec; t=$1; N=$2; W=$BC/$t; mkdir -p $W
   # Sources changed since the mode was converted (scripts/signature.sh): a lift source redoes lift, fold and link, a
   # half-done lift included (what it left was made from the old sources); a link source only the link. A mode converted
-  # before the signatures keeps its lift and is relinked once, so the update brings it the current runtime.
-  SL=$(bash scripts/signature.sh lift $t); SK=$(bash scripts/signature.sh link $t); R=
+  # before the signatures keeps its lift and is relinked once, so the update brings it the current runtime. Remill's
+  # patches count as the lift, taken as they are by a mode lifted before they were signed.
+  SL=$(bash scripts/signature.sh lift $t); SR=$(bash scripts/signature.sh remill $t); SK=$(bash scripts/signature.sh link $t); R=
   [ -f $W/.sig_lift ] || [ ! -f $W/.plie ] || echo $SL > $W/.sig_lift
-  if [ -f $W/.sig_lift ] && [ "$(cat $W/.sig_lift)" != $SL ]; then
+  [ -f $W/.sig_remill ] || [ ! -f $W/.plie ] || echo $SR > $W/.sig_remill
+  if { [ -f $W/.sig_lift ] && [ "$(cat $W/.sig_lift)" != $SL ]; } || { [ -f $W/.sig_remill ] && [ "$(cat $W/.sig_remill)" != $SR ]; }; then
     say "$P %  $3: the lift changed, converting again"; R=1
     rm -rf $W/.plie $W/.fini ${W}_fold
     find $W -maxdepth 1 \( -name 'func_*.bc*' -o -name 'batch_*.bc' -o -name 'cached_part_*.bc' \) -delete
@@ -67,7 +69,7 @@ for spec in "sps 9211 t6sp" "zms 12533 t6zm" "mps 12664 t6mp"; do
     [ -f $W/runway_vide.txt ] || : > $W/runway_vide.txt
     B="LIFT_PISTE_ENTIERE=1 BO2_TARGET=$t BOOT_WORKDIR=$W LIFT_ROOTS_FILE=tools/lift_roots_$t.txt LIFT_RUNWAY_FILE=$W/runway_vide.txt"
     if [ ! -f $W/.plie ]; then
-      garde; say "$P %  $3: lift"; echo $SL > $W/.sig_lift
+      garde; say "$P %  $3: lift"; echo $SL > $W/.sig_lift; echo $SR > $W/.sig_remill
       veille $W/lift.log env $B python3 -u tools/boot.py -n $N -j $J --build-only || { [ $? = 124 ] \
         && die "$3 lift made no progress for 45 min (see $W/lift.log)"; die "$3 lift failed (see $W/lift.log)"; }
       garde; say "$((P + 15)) %  $3: fold"

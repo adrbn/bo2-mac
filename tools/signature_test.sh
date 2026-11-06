@@ -3,7 +3,8 @@
 set -euo pipefail
 S="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/signature.sh"
 D=$(mktemp -d); trap 'rm -rf "$D"' EXIT
-mkdir -p "$D/scripts" "$D/runtime" "$D"/boot_cache/{sps,zms,mps}; cp "$S" "$D/scripts/"; echo x > "$D/runtime/a.cpp"; cd "$D"
+mkdir -p "$D/scripts" "$D/runtime" "$D/tools/remill-patches" "$D"/boot_cache/{sps,zms,mps}; cp "$S" "$D/scripts/"; cd "$D"
+echo x > runtime/a.cpp; echo p > tools/remill-patches/0001.patch
 s() { bash scripts/signature.sh "$@"; }
 ko() { echo "ECHEC : $*" >&2; exit 1; }
 for t in sps zms mps; do s lift $t > boot_cache/$t/.sig_lift; s link $t > boot_cache/$t/.sig_link; touch boot_cache/$t/.fini; done
@@ -18,4 +19,8 @@ rm boot_cache/*/.sig_*
 ! s check                                || ko "conversion liee sans signature non reliee"
 for t in sps zms mps; do s link $t > boot_cache/$t/.sig_link; done
 s check                                  || ko "lift sans signature refait"
+for t in sps zms mps; do s remill $t > boot_cache/$t/.sig_remill; done
+s check                                  || ko "patchs Remill signes vus perimes"
+echo q >> tools/remill-patches/0001.patch
+! s check                                || ko "patch Remill change non vu"
 echo OK
