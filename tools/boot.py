@@ -112,6 +112,7 @@ _TARGETS = {
                            0x7fdd10: "_bo2_snd_ready",
                            # Natifs de débit (P1053), replis _sub_<va>_impl : tools/steam/native_impl.sh.
                            0x69a9a0: "_bo2_snd_s16tof", 0x7fe6a5: "_bo2_snd_addps", 0x7fea7d: "_bo2_snd_biquad",
+                           0x806290: "_bo2_snd_reverb_sp",
                            0x47b080: "_bo2_skin1", 0x47b4e0: "_bo2_skin2", 0x47ba60: "_bo2_skin3", 0x47c110: "_bo2_skin4"}),
     # Multi et Zombies STEAM (build 2026) : tools/steam/{mp,zm}_redirects.tsv (vérifiées au code), catalogue
     # tools/ghidra-{mps,zms}. Premier lien : les natifs de correction seulement (memcpy dont
@@ -123,6 +124,7 @@ _TARGETS = {
                            0xa245b8: "_bo2_libm_atan2", 0x9697c0: "_bo2_vpx_decode",
                            0x832d60: "_bo2_snd_ready",
                            0x6f5600: "_bo2_snd_s16tof", 0x8336f5: "_bo2_snd_addps", 0x833acd: "_bo2_snd_biquad",
+                           0x83b1a0: "_bo2_snd_reverb_mp",
                            0x459800: "_bo2_cull_mp", 0x459ce0: "_bo2_portail_mp", 0x45a150: "_bo2_portail_racine_mp",
                            0x59a120: "_bo2_regles_find",
                            0x47ab10: "_bo2_skin1", 0x47af70: "_bo2_skin2", 0x47b4f0: "_bo2_skin3", 0x47bba0: "_bo2_skin4"}),
@@ -132,6 +134,7 @@ _TARGETS = {
                            0xa21938: "_bo2_libm_atan2", 0x966b40: "_bo2_vpx_decode",
                            0x833d40: "_bo2_snd_ready",
                            0x6f65d0: "_bo2_snd_s16tof", 0x8346d5: "_bo2_snd_addps", 0x834aad: "_bo2_snd_biquad",
+                           0x83c170: "_bo2_snd_reverb_zm",
                            0x4584c0: "_bo2_cull_zm",
                            0x59b6c0: "_bo2_regles_find",
                            0x47acf0: "_bo2_skin1", 0x47b150: "_bo2_skin2", 0x47b6d0: "_bo2_skin3", 0x47bd80: "_bo2_skin4"}),
