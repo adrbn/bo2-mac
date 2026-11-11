@@ -28,7 +28,7 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 ![game files in this repository: none](https://img.shields.io/badge/game%20files-none-f4f1ea?style=flat-square&labelColor=0b0b0c)
 ![status: beta](https://img.shields.io/badge/status-beta-f4f1ea?style=flat-square&labelColor=0b0b0c)
 
-<sub>[Abstract](#abstract) · [Method](#method) · [Limits](#limits) · [Repository](#repository) · [Legal](#legal)</sub><br>
+<sub>[Why](#why) · [Abstract](#abstract) · [Method](#method) · [Limits](#limits) · [Repository](#repository) · [Legal](#legal)</sub><br>
 <sub>Beta, 2026-11-03 · measured on one Apple M1 (4 performance + 4 efficiency cores, 16 GB)</sub>
 
 </div>
@@ -45,6 +45,14 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 ---
 
 <img src="docs/assets/rule-01.svg" alt="" width="100%">
+
+## Why
+
+Black Ops II never came out on Mac. On Apple Silicon the usual way to play it is Wine or CrossOver on top of
+Rosetta 2, which translate the game while it runs. Here that translation happens once, before the game starts, and
+what you get is a native ARM64 app. That also means it can be fixed and extended like any Mac app: split-screen,
+which the PC version never had, is in progress. A side-by-side comparison with CrossOver on the same Mac is not done
+yet.
 
 ## Abstract
 
