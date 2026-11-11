@@ -378,4 +378,14 @@ This is an unofficial fan project. Call of Duty and Black Ops are trademarks of 
 trademark of Valve Corporation. This project is not affiliated with, endorsed by or sponsored by Activision, Treyarch,
 Microsoft or Valve. To play, buy the game.
 
+## Star History
+
+<a href="https://www.star-history.com/#adrbn/bo2-mac&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date" />
+  </picture>
+</a>
+
 <div align="center"><img src="docs/assets/footer.svg" alt="" width="100%"></div>

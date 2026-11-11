@@ -321,4 +321,14 @@ scripts/make_app.sh --from-source
 这是一个非官方粉丝项目。Call of Duty 和 Black Ops 是 Activision Publishing, Inc. 的商标。Steam 是 Valve Corporation
 的商标。本项目与 Activision、Treyarch、Microsoft 或 Valve 无关，未获得其认可或赞助。想玩，请购买正版游戏。
 
+## Star 历史
+
+<a href="https://www.star-history.com/#adrbn/bo2-mac&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date" />
+  </picture>
+</a>
+
 <div align="center"><img src="docs/assets/footer.svg" alt="" width="100%"></div>
