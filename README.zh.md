@@ -18,6 +18,7 @@
 <a href="#发现"><img src="docs/assets/btn-findings.svg" alt="发现" height="40"></a>&nbsp;
 <a href="#路线图"><img src="docs/assets/btn-roadmap.svg" alt="路线图" height="40"></a>
 
+[![Featured on the Hacker News front page](https://img.shields.io/badge/Hacker%20News-front%20page-ff6600?style=flat-square&labelColor=0b0b0c&logo=ycombinator&logoColor=ff6600)](https://news.ycombinator.com/item?id=50449891)
 ![source: x86-32 Windows](https://img.shields.io/badge/source-x86--32%20Windows-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![target: ARM64 macOS](https://img.shields.io/badge/target-ARM64%20macOS-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![lifter: Remill, LLVM 17](https://img.shields.io/badge/lifter-Remill%20%E2%86%92%20LLVM%2017-ff6a00?style=flat-square&labelColor=0b0b0c)
@@ -27,8 +28,7 @@
 ![status: beta](https://img.shields.io/badge/status-beta-f4f1ea?style=flat-square&labelColor=0b0b0c)
 
 <sub>[概要](#概要) · [方法](#方法) · [限制](#限制) · [仓库结构](#仓库结构) · [法律声明](#法律声明)</sub><br>
-<sub>2026-11-03 测试版 · 在一台 Apple M1 上测得（4 个性能核心 + 4 个能效核心，16 GB）</sub><br>
-<sub>2026 年 11 月登上 <a href="https://news.ycombinator.com/item?id=50449891">Hacker News 首页</a></sub>
+<sub>2026-11-03 测试版 · 在一台 Apple M1 上测得（4 个性能核心 + 4 个能效核心，16 GB）</sub>
 
 </div>
 
