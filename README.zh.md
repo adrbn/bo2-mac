@@ -18,7 +18,8 @@
 <a href="#发现"><img src="docs/assets/btn-findings.svg" alt="发现" height="40"></a>&nbsp;
 <a href="#路线图"><img src="docs/assets/btn-roadmap.svg" alt="路线图" height="40"></a>
 
-[![Featured on the Hacker News front page](https://img.shields.io/badge/Hacker%20News-front%20page-ff6600?style=flat-square&labelColor=0b0b0c&logo=ycombinator&logoColor=ff6600)](https://news.ycombinator.com/item?id=50449891)
+<a href="https://news.ycombinator.com/item?id=50449891"><img src="docs/assets/btn-hackernews.svg" alt="Featured on Hacker News" height="44"></a>
+
 ![source: x86-32 Windows](https://img.shields.io/badge/source-x86--32%20Windows-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![target: ARM64 macOS](https://img.shields.io/badge/target-ARM64%20macOS-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![lifter: Remill, LLVM 17](https://img.shields.io/badge/lifter-Remill%20%E2%86%92%20LLVM%2017-ff6a00?style=flat-square&labelColor=0b0b0c)
