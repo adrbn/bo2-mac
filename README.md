@@ -27,7 +27,8 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 ![status: beta](https://img.shields.io/badge/status-beta-f4f1ea?style=flat-square&labelColor=0b0b0c)
 
 <sub>[Abstract](#abstract) · [Method](#method) · [Limits](#limits) · [Repository](#repository) · [Legal](#legal)</sub><br>
-<sub>Beta, 2026-11-03 · measured on one Apple M1 (4 performance + 4 efficiency cores, 16 GB)</sub>
+<sub>Beta, 2026-11-03 · measured on one Apple M1 (4 performance + 4 efficiency cores, 16 GB)</sub><br>
+<sub>Featured on the <a href="https://news.ycombinator.com/item?id=50449891">Hacker News front page</a>, November 2026</sub>
 
 </div>
 

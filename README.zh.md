@@ -27,7 +27,8 @@
 ![status: beta](https://img.shields.io/badge/status-beta-f4f1ea?style=flat-square&labelColor=0b0b0c)
 
 <sub>[概要](#概要) · [方法](#方法) · [限制](#限制) · [仓库结构](#仓库结构) · [法律声明](#法律声明)</sub><br>
-<sub>2026-11-03 测试版 · 在一台 Apple M1 上测得（4 个性能核心 + 4 个能效核心，16 GB）</sub>
+<sub>2026-11-03 测试版 · 在一台 Apple M1 上测得（4 个性能核心 + 4 个能效核心，16 GB）</sub><br>
+<sub>2026 年 11 月登上 <a href="https://news.ycombinator.com/item?id=50449891">Hacker News 首页</a></sub>
 
 </div>
 
