@@ -48,11 +48,14 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 
 ## Why
 
-Black Ops II never came out on Mac. On Apple Silicon the usual way to play it is Wine or CrossOver on top of
-Rosetta 2, which translate the game while it runs. Here that translation happens once, before the game starts, and
-what you get is a native ARM64 app. That also means it can be fixed and extended like any Mac app: split-screen,
-which the PC version never had, is in progress. A side-by-side comparison with CrossOver on the same Mac is not done
-yet.
+Black Ops II never came out on Mac, and on Apple Silicon it was not really playable before.
+[AppleGamingWiki](https://www.applegamingwiki.com/wiki/Call_of_Duty:_Black_Ops_II) lists it as unplayable under
+CrossOver and not supported under Rosetta 2. What remains is a Windows ARM virtual machine in Parallels, with reports
+ranging from 1 frame per second in matches on an M1 Max to 60–80 on M3 and M4
+([MacGamingDB](https://macgamingdb.app/games/call-of-duty-black-ops-ii)). Here the game is translated once, before it
+starts, into a native ARM64 app: 51–60 frames per second on a base M1, with no Windows and no virtual machine. Being
+native also means it can be fixed and extended like any Mac app: split-screen, which the PC version never had, is in
+progress.
 
 ## Abstract
 
