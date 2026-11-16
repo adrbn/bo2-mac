@@ -535,6 +535,25 @@ extern "C" int gfx_window_centre(double* x, double* y) {
 extern "C" void gfx_pointer_pinned(void) {
     g_pointeur_fixe_t.store(CACurrentMediaTime(), std::memory_order_relaxed);
 }
+// MENU POINTER OFFSET (issue #6: "I can't switch from Graphics to Advanced"). The game reads its menu pointer with
+// GetCursorPos then ScreenToClient, and divides the result by its RENDER size. On Windows the client area is the
+// render size. Here the window is in points (e.g. 1280x720), the game's 1920x1080 image is fitted into it by
+// CoreAnimation (kCAGravityResizeAspect, bars possible), and ScreenToClient subtracted the origin the game gave to
+// CreateWindowEx instead of the real window's. The game's pointer landed far from the macOS one, so a click on a tab
+// hit something else. This turns a global screen point (points, top-left origin) into game buffer pixels.
+// Returns 0 while the window geometry is stale.
+static std::atomic<double> g_area_x{0}, g_area_y{0}, g_area_w{0}, g_area_h{0};   // contentView, global points
+extern "C" int gfx_pointer_to_guest(double px, double py, double* gx, double* gy) {
+    double cx, cy;
+    const double w = g_area_w.load(std::memory_order_relaxed), h = g_area_h.load(std::memory_order_relaxed);
+    if (!gfx_window_centre(&cx, &cy) || w <= 0 || h <= 0 || g_guest_bb_w <= 0.f || g_guest_bb_h <= 0.f) return 0;
+    const double s = fmin(w / g_guest_bb_w, h / g_guest_bb_h);            // same fit as the image
+    const double ox = g_area_x.load(std::memory_order_relaxed) + (w - g_guest_bb_w * s) * 0.5;
+    const double oy = g_area_y.load(std::memory_order_relaxed) + (h - g_guest_bb_h * s) * 0.5;
+    *gx = (px - ox) / s;
+    *gy = (py - oy) / s;
+    return 1;
+}
 id<MTLTexture>             g_white = nil;      // stand-in for an untextured batch
 // D3D11 SAMPLING A NULL SHADER RESOURCE RETURNS (0,0,0,0), NOT WHITE. Our white
 // stand-in was fine for a multiply-by-texture shader but catastrophic for the
@@ -3623,6 +3642,18 @@ void keypipe_start_once() {
 // Measurement plumbing, like the keypipe: off unless the variable is set.
 std::atomic<int> g_client_w{0}, g_client_h{0};   // client POINTS, refreshed per pump
 
+// BO2_CLICKPIPE_POINTER=1: a pipe move/click ALSO places the pointer GetCursorPos reads (cursor_real,
+// user32_impl.cpp). The game ignores the position in mouse messages and polls GetCursorPos instead, so without
+// this a driven click lands wherever the real mouse is. Measurement only, off by default.
+static std::atomic<int> g_driven_x{-1}, g_driven_y{-1};   // client points, -1 = not driven
+extern "C" int gfx_driven_pointer(double* x, double* y) {
+    const int px = g_driven_x.load(std::memory_order_relaxed), py = g_driven_y.load(std::memory_order_relaxed);
+    if (px < 0 || py < 0) return 0;
+    *x = g_area_x.load(std::memory_order_relaxed) + px;
+    *y = g_area_y.load(std::memory_order_relaxed) + py;
+    return 1;
+}
+
 uint32_t mouse_lparam_xy(int x, int y) {
     if (x < 0) x = 0; if (y < 0) y = 0;
     return ((uint32_t)(y & 0xffff) << 16) | (uint32_t)(x & 0xffff);
@@ -3694,6 +3725,8 @@ void clickpipe_thread(std::string path) {
             // the entire reason this exists.
             fprintf(stderr, "[CLICKPIPE] %s at client (%d,%d) of %dx%d%s\n",
                     verb, x, y, cw, ch, move ? "" : (right ? " [right]" : " [left]"));
+            static const bool driven = bo2_env_on("BO2_CLICKPIPE_POINTER");
+            if (driven) { g_driven_y.store(y, std::memory_order_relaxed); g_driven_x.store(x, std::memory_order_relaxed); }
             // Motion first even for a click: engines that hit-test against a
             // CACHED cursor position, rather than the message's own lParam, see
             // nothing at all from a button message that arrives out of nowhere.
@@ -4195,6 +4228,10 @@ extern "C" bool gfx_pump_once() {
                 g_centre_y.store(floor(CGDisplayBounds(CGMainDisplayID()).size.height - NSMidY(r)),
                                  std::memory_order_relaxed);
                 g_centre_t.store(CACurrentMediaTime(), std::memory_order_relaxed);
+                g_area_x.store(NSMinX(r), std::memory_order_relaxed);
+                g_area_y.store(CGDisplayBounds(CGMainDisplayID()).size.height - NSMaxY(r), std::memory_order_relaxed);
+                g_area_w.store(NSWidth(r), std::memory_order_relaxed);
+                g_area_h.store(NSHeight(r), std::memory_order_relaxed);
                 // The pointer is hidden while the game keeps putting it back in the middle (mouse look), and
                 // shown again 0.5 s after it stops (menus) or as soon as it is given back. The guest's
                 // ShowCursor count cannot decide this: it flips between 0 and -1 at frame rate in the menus

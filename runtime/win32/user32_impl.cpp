@@ -31,6 +31,9 @@ extern "C" int gfx_pointer_engaged(void);     // C16 : clic dans la fenêtre, re
 extern "C" int gfx_window_centre(double* x, double* y);    // milieu de la zone de jeu, points d'écran globaux ;
                                                            // 0 si la pompe ne l'a pas publié depuis 0,5 s
 extern "C" void gfx_pointer_pinned(void);                  // le jeu vient de recentrer un pointeur tenu
+extern "C" int gfx_pointer_to_guest(double px, double py, double* gx, double* gy);   // screen point -> game buffer
+                                                           // pixels; 0 while the window geometry is stale
+extern "C" int gfx_driven_pointer(double* x, double* y);   // BO2_CLICKPIPE_POINTER: pointer driven by the pipe
 
 
 extern "C" {
@@ -364,8 +367,30 @@ static void impl_ClientToScreen(State& s) {
     win32_stdcall_ret(s, 2);
 }
 
+static void cursor_real(double& x, double& y);
+
 static void impl_ScreenToClient(State& s) {
     uint32_t pt_ptr = win32_arg(s, 1);
+    // BO2_MOUSE_MAP=1 (issue #6): the campaign calls this once per frame, on the GetCursorPos it has just read.
+    // Answer with the real macOS pointer in game buffer pixels, which is what the menu code expects (see
+    // gfx_pointer_to_guest). Without it the menu pointer is offset and the tab under the mouse is never clicked.
+    static const bool map = bo2_env_on("BO2_MOUSE_MAP");
+    double rx, ry, gx, gy;
+    if (pt_ptr && map && (cursor_real(rx, ry), gfx_pointer_to_guest(rx, ry, &gx, &gy))) {
+        const int32_t ax = (int32_t)win32_mem_read32(pt_ptr) - g_win_x, ay = (int32_t)win32_mem_read32(pt_ptr + 4) - g_win_y;
+        win32_mem_write32(pt_ptr, (uint32_t)(int32_t)lround(gx));
+        win32_mem_write32(pt_ptr + 4, (uint32_t)(int32_t)lround(gy));
+        static int n = 0;
+        static long px = -1, py = -1;
+        if (n < 12 && (lround(gx) != px || lround(gy) != py) && bo2_getenv("BO2_IN_PROBE")) {
+            px = lround(gx); py = lround(gy); n++;
+            fprintf(stderr, "[MOUSE-MAP] pointer %.0f,%.0f -> buffer %ld,%ld (before the fix: %d,%d)\n",
+                    rx, ry, px, py, ax, ay);
+        }
+        s.gpr.rax.dword = 1;
+        win32_stdcall_ret(s, 2);
+        return;
+    }
     if (pt_ptr) {
         uint32_t x = win32_mem_read32(pt_ptr);
         uint32_t y = win32_mem_read32(pt_ptr + 4);
@@ -516,6 +541,7 @@ static bool   g_visee = false, g_lu_bouge = false;
 static int    g_sans_reponse = 0;
 
 static void cursor_real(double& x, double& y) {
+    if (gfx_driven_pointer(&x, &y)) return;
     CGEventRef e = CGEventCreate(nullptr);
     CGPoint loc = CGEventGetLocation(e);
     CFRelease(e);
@@ -587,7 +613,10 @@ static void impl_GetCursorPos(State& s) {
         // un jeu en arrière-plan ne voit pas la souris des autres applications. Le testeur,
         // 2026-09-26 : « quand je suis sur d'autres logiciels, le curseur fait tourner la
         // caméra ». Hors fenêtre clé, on réancre : l'invité lit un delta nul.
-        if (!gfx_window_is_really_key()) { g_real_ref_x = rx; g_real_ref_y = ry; }
+        // Except for a pointer driven by the pipe (BO2_CLICKPIPE_POINTER): a scripted test runs with the window not
+        // key, and without a read that moves, the menu neither hovers nor hits anything.
+        double px_, py_;
+        if (!gfx_window_is_really_key() && !gfx_driven_pointer(&px_, &py_)) { g_real_ref_x = rx; g_real_ref_y = ry; }
         // The delta is rounded, not truncated: a pointer read back a hair short of where it was put would
         // otherwise turn the camera by one count every frame.
         const double vx = g_virt_x + (double)lround(rx - g_real_ref_x);
