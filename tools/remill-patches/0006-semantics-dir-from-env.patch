@@ -1,0 +1,24 @@
+diff --git a/lib/BC/Util.cpp b/lib/BC/Util.cpp
+index dd02c75..cf3b9e8 100644
+--- a/lib/BC/Util.cpp
++++ b/lib/BC/Util.cpp
+@@ -48,6 +48,8 @@
+ #include <llvm/Support/ToolOutputFile.h>
+ #include <llvm/Support/raw_ostream.h>
+ 
++#include <cstdlib>
++
+ #include "remill/Arch/Arch.h"
+ #include "remill/Arch/Name.h"
+ #include "remill/BC/ABI.h"
+@@ -597,7 +599,10 @@ namespace {
+ using paths_t = std::vector<std::filesystem::path>;
+ 
+ const paths_t &DefaultSemanticsSearchPaths() {
++  // bo2-mac: a prebuilt remill-lift (the app's toolchain) no longer sits next to its build folder.
++  static const char *env_dir = std::getenv("REMILL_SEMANTICS_DIR");
+   static const paths_t paths = {
++      env_dir ? env_dir : REMILL_BUILD_SEMANTICS_DIR_X86,
+       REMILL_BUILD_SEMANTICS_DIR_X86,
+       REMILL_BUILD_SEMANTICS_DIR_AARCH32,
+       REMILL_BUILD_SEMANTICS_DIR_AARCH64,

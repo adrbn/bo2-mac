@@ -2,15 +2,24 @@
 // rereads the last "[prepare] NN %  step" line of the build_steam.sh log and shows the four steps, the time left
 // and the battery state, in the Mac's language (9 languages, English otherwise). Exit codes read by the launcher:
 // 0 = "Play" (boot built), 3 = "Try Again" (build_steam.sh resumes where it stopped), 1 = window closed (the
-// preparation keeps going). The icon is the one the launcher read from the player's t6sp.exe (<log folder>/icon.png).
+// preparation keeps going). The icon is the one read from the player's t6sp.exe (<log folder>/icon.png), else the app's own.
 import AppKit
 import IOKit.ps
 import SwiftUI
 
 let args = CommandLine.arguments
-guard args.count == 3, let p = pid_t(args[2]) else { exit(2) }
-let pid = p
-let journal = args[1]
+// setup_window.swift --accueil: the welcome window, before anything runs (make_app.sh): where the game folder is, and
+// whether the three prepared exes are in ~/.bo2-native/steam. Prints the folder on stdout and exits 0; 1 = closed.
+// setup_window.swift --icone <png>: draws our neutral mark (1024 px), make_app.sh's AppIcon. Never the game's logo.
+if args.count == 3 && args[1] == "--icone" {
+    exit(marque().tiffRepresentation.flatMap { NSBitmapImageRep(data: $0)?.representation(using: .png, properties: [:]) }
+        .map { (try? $0.write(to: URL(fileURLWithPath: args[2]))) != nil } == true ? 0 : 1)
+}
+let accueil = args.count == 2 && args[1] == "--accueil"
+let maison = ProcessInfo.processInfo.environment["HOME"] ?? NSHomeDirectory()   // the launcher's $HOME (NSHomeDirectory ignores it)
+guard accueil || (args.count == 3 && pid_t(args[2]) != nil) else { exit(2) }
+let pid = accueil ? 0 : pid_t(args[2])!
+let journal = accueil ? maison + "/.bo2-native/app-local/preparation.log" : args[1]
 let dossier = (journal as NSString).deletingLastPathComponent
 // The last mode the conversion goes to (scripts/build_steam.sh, issue #3)
 let demande = (try? String(contentsOfFile: dossier + "/boot_cache/conversion_target", encoding: .utf8))?
@@ -56,10 +65,26 @@ let textes: [String: [String: String]] = [
     "h": ["fr": "environ %d h %02d restantes", "en": "about %d h %02d min left", "de": "noch etwa %d Std. %02d Min.", "es": "unas %d h %02d min restantes", "it": "circa %d h %02d min rimanenti", "pt": "cerca de %d h %02d min restantes", "pl": "jeszcze ok. %d h %02d min", "ru": "осталось около %d ч %02d мин", "ja": "残り約%d時間%02d分"],
     "r_disque": ["fr": "Il faut au moins 8 Go libres sur le disque (il en reste %d). Libérez de la place, puis réessayez.", "en": "At least 8 GB of free disk space is needed (%d GB left). Free up some space, then try again.", "de": "Es werden mindestens 8 GB freier Speicher benötigt (noch %d GB frei). Bitte schaffen Sie Platz und versuchen Sie es erneut.", "es": "Se necesitan al menos 8 GB libres en el disco (quedan %d). Libere espacio y vuelva a intentarlo.", "it": "Servono almeno 8 GB liberi sul disco (ne restano %d). Liberi spazio e riprovi.", "pt": "São necessários pelo menos 8 GB livres no disco (restam %d). Libere espaço e tente de novo.", "pl": "Potrzeba co najmniej 8 GB wolnego miejsca na dysku (zostało %d). Należy zwolnić miejsce i spróbować ponownie.", "ru": "Нужно минимум 8 ГБ свободного места на диске (осталось %d). Освободите место и повторите.", "ja": "ディスクに8GB以上の空き容量が必要です（残り%dGB）。空き容量を増やしてから再試行してください。"],
     "r_outils": ["fr": "Il manque des outils de développement. Installez Homebrew (brew.sh), puis collez cette commande dans Terminal :", "en": "Some developer tools are missing. Install Homebrew (brew.sh), then paste this command into Terminal:", "de": "Es fehlen Entwicklerwerkzeuge. Installieren Sie Homebrew (brew.sh) und fügen Sie dann diesen Befehl im Terminal ein:", "es": "Faltan herramientas de desarrollo. Instale Homebrew (brew.sh) y pegue este comando en Terminal:", "it": "Mancano alcuni strumenti di sviluppo. Installi Homebrew (brew.sh), poi incolli questo comando nel Terminale:", "pt": "Faltam ferramentas de desenvolvimento. Instale o Homebrew (brew.sh) e cole este comando no Terminal:", "pl": "Brakuje narzędzi programistycznych. Należy zainstalować Homebrew (brew.sh), a potem wkleić to polecenie w Terminalu:", "ru": "Не хватает инструментов разработчика. Установите Homebrew (brew.sh), затем вставьте эту команду в Терминал:", "ja": "開発ツールが不足しています。Homebrew（brew.sh）をインストールしてから、次のコマンドをターミナルに貼り付けてください："],
+    "r_clt": ["fr": "Il faut les outils de ligne de commande d'Apple (gratuits). Cliquez sur « Installer » dans la fenêtre que macOS vient d'ouvrir, attendez la fin de l'installation, puis cliquez sur « Réessayer ».", "en": "Apple's Command Line Tools are needed (free). Click “Install” in the window macOS just opened, wait for the installation to finish, then click “Try Again”.", "de": "Die Befehlszeilentools von Apple werden benötigt (kostenlos). Klicken Sie im Fenster, das macOS gerade geöffnet hat, auf „Installieren“, warten Sie das Ende der Installation ab und klicken Sie dann auf „Erneut versuchen“.", "es": "Se necesitan las herramientas de línea de comandos de Apple (gratuitas). Haga clic en «Instalar» en la ventana que macOS acaba de abrir, espere a que termine la instalación y luego haga clic en «Reintentar».", "it": "Servono gli strumenti da riga di comando di Apple (gratuiti). Clicchi su «Installa» nella finestra che macOS ha appena aperto, attenda la fine dell'installazione, poi clicchi su «Riprova».", "pt": "São necessárias as ferramentas de linha de comando da Apple (gratuitas). Clique em “Instalar” na janela que o macOS acabou de abrir, aguarde o fim da instalação e clique em “Tentar novamente”.", "pl": "Potrzebne są bezpłatne narzędzia wiersza poleceń Apple. Należy kliknąć „Zainstaluj” w oknie otwartym przez macOS, poczekać na koniec instalacji, a potem kliknąć „Spróbuj ponownie”.", "ru": "Нужны инструменты командной строки Apple (бесплатно). Нажмите «Установить» в окне, которое только что открыла macOS, дождитесь окончания установки, затем нажмите «Повторить».", "ja": "Appleのコマンドライン・デベロッパ・ツール（無料）が必要です。macOSが開いたウインドウで「インストール」をクリックし、インストールが終わったら「再試行」をクリックしてください。"],
+    "installer": ["fr": "Installer les outils", "en": "Install the tools", "de": "Tools installieren", "es": "Instalar las herramientas", "it": "Installa gli strumenti", "pt": "Instalar as ferramentas", "pl": "Zainstaluj narzędzia", "ru": "Установить инструменты", "ja": "ツールをインストール"],
     "r_enveloppe": ["fr": "C'est bien la version Steam à jour, mais elle a encore son enveloppe SteamStub : seule l'enveloppe doit être retirée (README, Installation).", "en": "This is the right, up-to-date Steam version, but it still has its SteamStub wrapper: only the wrapper must be removed (README, Install).", "de": "Das ist die richtige, aktuelle Steam-Version, aber sie hat noch ihre SteamStub-Hülle: Nur die Hülle muss entfernt werden (README, Installation).", "es": "Es la versión de Steam correcta y actualizada, pero aún tiene su envoltorio SteamStub: solo hay que quitar el envoltorio (README, instalación).", "it": "È la versione Steam giusta e aggiornata, ma ha ancora il suo involucro SteamStub: va rimosso solo l'involucro (README, installazione).", "pt": "É a versão da Steam certa e atualizada, mas ainda tem o invólucro SteamStub: só o invólucro precisa ser removido (README, instalação).", "pl": "To właściwa, aktualna wersja ze Steama, ale nadal ma opakowanie SteamStub: trzeba usunąć tylko opakowanie (README, instalacja).", "ru": "Это нужная, актуальная версия из Steam, но на ней ещё обёртка SteamStub: снять нужно только обёртку (README, установка).", "ja": "正しい最新のSteam版ですが、まだSteamStubのラッパーが付いています。ラッパーだけを外してください（README、インストール）。"],
     "r_exe": ["fr": "Ce t6sp.exe n'est pas la version que le portage sait traduire : il faut celui de Steam, à jour.", "en": "This t6sp.exe is not the version the port can translate: it needs the up-to-date Steam one.", "de": "Diese t6sp.exe ist nicht die Version, die der Port übersetzen kann: Benötigt wird die aktuelle Steam-Version.", "es": "Este t6sp.exe no es la versión que el port sabe traducir: hace falta el de Steam, actualizado.", "it": "Questo t6sp.exe non è la versione che il port sa tradurre: serve quello di Steam, aggiornato.", "pt": "Este t6sp.exe não é a versão que o port sabe traduzir: é preciso o da Steam, atualizado.", "pl": "Ten t6sp.exe to nie wersja, którą port potrafi przetłumaczyć: potrzebny jest aktualny plik ze Steama.", "ru": "Этот t6sp.exe — не та версия, которую умеет переводить порт: нужен актуальный файл из Steam.", "ja": "このt6sp.exeは移植版が変換できるバージョンではありません。最新のSteam版が必要です。"],
     "d_fichiers": ["fr": "Fichiers compilés : %@ / %@", "en": "Files compiled: %@ / %@", "de": "Kompilierte Dateien: %@ / %@", "es": "Archivos compilados: %@ / %@", "it": "File compilati: %@ / %@", "pt": "Arquivos compilados: %@ / %@", "pl": "Skompilowane pliki: %@ / %@", "ru": "Скомпилировано файлов: %@ / %@", "ja": "コンパイル済みファイル：%@ / %@"],
     "signaler": ["fr": "Signaler le problème", "en": "Report the problem", "de": "Problem melden", "es": "Informar del problema", "it": "Segnala il problema", "pt": "Relatar o problema", "pl": "Zgłoś problem", "ru": "Сообщить о проблеме", "ja": "問題を報告"],
+    // Welcome window (--accueil)
+    "a_glisser": ["fr": "Glissez ici le dossier de Black Ops II", "en": "Drop the Black Ops II folder here", "de": "Ziehen Sie den Ordner von Black Ops II hierher", "es": "Arrastre aquí la carpeta de Black Ops II", "it": "Trascini qui la cartella di Black Ops II", "pt": "Arraste para cá a pasta do Black Ops II", "pl": "Folder Black Ops II można przeciągnąć tutaj", "ru": "Перетащите сюда папку Black Ops II", "ja": "Black Ops IIのフォルダをここにドラッグしてください"],
+    "a_quel": ["fr": "Le dossier qui contient t6sp.exe. Avec Steam, il est d'habitude dans steamapps › common › Call of Duty Black Ops II.", "en": "The folder that contains t6sp.exe. With Steam, it is usually in steamapps › common › Call of Duty Black Ops II.", "de": "Der Ordner, der t6sp.exe enthält. Bei Steam liegt er meist unter steamapps › common › Call of Duty Black Ops II.", "es": "La carpeta que contiene t6sp.exe. Con Steam, suele estar en steamapps › common › Call of Duty Black Ops II.", "it": "La cartella che contiene t6sp.exe. Con Steam di solito si trova in steamapps › common › Call of Duty Black Ops II.", "pt": "A pasta que contém o t6sp.exe. Com a Steam, ela costuma ficar em steamapps › common › Call of Duty Black Ops II.", "pl": "Folder zawierający t6sp.exe. W Steamie zwykle znajduje się w steamapps › common › Call of Duty Black Ops II.", "ru": "Папка, в которой лежит t6sp.exe. В Steam она обычно находится в steamapps › common › Call of Duty Black Ops II.", "ja": "t6sp.exeが入っているフォルダです。Steamでは通常 steamapps › common › Call of Duty Black Ops II にあります。"],
+    "a_choisir": ["fr": "Choisir…", "en": "Choose…", "de": "Auswählen…", "es": "Elegir…", "it": "Scegli…", "pt": "Escolher…", "pl": "Wybierz…", "ru": "Выбрать…", "ja": "選択…"],
+    "a_invite": ["fr": "Choisissez le dossier de Black Ops II (celui qui contient t6sp.exe)", "en": "Choose the Black Ops II folder (the one containing t6sp.exe)", "de": "Wählen Sie den Ordner von Black Ops II (der t6sp.exe enthält)", "es": "Elija la carpeta de Black Ops II (la que contiene t6sp.exe)", "it": "Scelga la cartella di Black Ops II (quella che contiene t6sp.exe)", "pt": "Escolha a pasta do Black Ops II (a que contém o t6sp.exe)", "pl": "Folder Black Ops II (zawierający t6sp.exe)", "ru": "Выберите папку Black Ops II (в которой лежит t6sp.exe)", "ja": "Black Ops IIのフォルダ（t6sp.exeがあるフォルダ）を選択してください"],
+    "a_trouve": ["fr": "Jeu trouvé sur ce Mac", "en": "Game found on this Mac", "de": "Spiel auf diesem Mac gefunden", "es": "Juego encontrado en este Mac", "it": "Gioco trovato su questo Mac", "pt": "Jogo encontrado neste Mac", "pl": "Znaleziono grę na tym Macu", "ru": "Игра найдена на этом Mac", "ja": "このMacでゲームが見つかりました"],
+    "a_choisi": ["fr": "Dossier du jeu", "en": "Game folder", "de": "Spielordner", "es": "Carpeta del juego", "it": "Cartella del gioco", "pt": "Pasta do jogo", "pl": "Folder gry", "ru": "Папка игры", "ja": "ゲームフォルダ"],
+    "a_autre": ["fr": "Un autre dossier…", "en": "Another folder…", "de": "Anderer Ordner…", "es": "Otra carpeta…", "it": "Un'altra cartella…", "pt": "Outra pasta…", "pl": "Inny folder…", "ru": "Другая папка…", "ja": "別のフォルダ…"],
+    "a_pas_exe": ["fr": "Aucun t6sp.exe dans « %@ » : choisissez le dossier qui le contient.", "en": "No t6sp.exe in “%@”: choose the folder that contains it.", "de": "Keine t6sp.exe in „%@“: Wählen Sie den Ordner, der sie enthält.", "es": "No hay ningún t6sp.exe en «%@»: elija la carpeta que lo contiene.", "it": "Nessun t6sp.exe in «%@»: scelga la cartella che lo contiene.", "pt": "Nenhum t6sp.exe em “%@”: escolha a pasta que o contém.", "pl": "Brak t6sp.exe w „%@”: należy wybrać folder, który go zawiera.", "ru": "В «%@» нет t6sp.exe: выберите папку, в которой он лежит.", "ja": "「%@」にt6sp.exeがありません。t6sp.exeが入っているフォルダを選んでください。"],
+    "a_exes": ["fr": "Les trois exécutables préparés", "en": "The three prepared executables", "de": "Die drei vorbereiteten Programmdateien", "es": "Los tres ejecutables preparados", "it": "I tre eseguibili preparati", "pt": "Os três executáveis preparados", "pl": "Trzy przygotowane pliki wykonywalne", "ru": "Три подготовленных исполняемых файла", "ja": "準備済みの3つの実行ファイル"],
+    "a_manque": ["fr": "Il en manque dans ~/.bo2-native/steam. La section « Install » du README explique comment les préparer à partir de votre copie Steam. Cette fenêtre les voit dès qu'ils sont là.", "en": "Some are missing from ~/.bo2-native/steam. The “Install” section of the README explains how to prepare them from your Steam copy. This window sees them as soon as they are there.", "de": "In ~/.bo2-native/steam fehlen welche. Der Abschnitt „Install“ der README erklärt, wie Sie sie aus Ihrer Steam-Kopie vorbereiten. Dieses Fenster erkennt sie, sobald sie da sind.", "es": "Faltan algunos en ~/.bo2-native/steam. La sección «Install» del README explica cómo prepararlos a partir de su copia de Steam. Esta ventana los detecta en cuanto están ahí.", "it": "Ne mancano alcuni in ~/.bo2-native/steam. La sezione «Install» del README spiega come prepararli dalla Sua copia Steam. Questa finestra li vede appena ci sono.", "pt": "Faltam alguns em ~/.bo2-native/steam. A seção “Install” do README explica como prepará-los a partir da sua cópia da Steam. Esta janela os detecta assim que estiverem lá.", "pl": "Brakuje części z nich w ~/.bo2-native/steam. Sekcja „Install” w README wyjaśnia, jak je przygotować z własnej kopii ze Steama. To okno wykryje je, gdy tylko się tam pojawią.", "ru": "В ~/.bo2-native/steam не хватает файлов. Раздел «Install» в README объясняет, как подготовить их из вашей копии Steam. Это окно заметит их, как только они появятся.", "ja": "~/.bo2-native/steam に足りないファイルがあります。READMEの「Install」セクションに、お持ちのSteam版から準備する方法が書かれています。ファイルが置かれると、このウインドウはすぐに認識します。"],
+    "a_ouvrir": ["fr": "Ouvrir le dossier", "en": "Open the folder", "de": "Ordner öffnen", "es": "Abrir la carpeta", "it": "Apri la cartella", "pt": "Abrir a pasta", "pl": "Otwórz folder", "ru": "Открыть папку", "ja": "フォルダを開く"],
+    "a_readme": ["fr": "Lire le README", "en": "Read the README", "de": "README lesen", "es": "Leer el README", "it": "Leggi il README", "pt": "Ler o README", "pl": "Przeczytaj README", "ru": "Открыть README", "ja": "READMEを読む"],
+    "a_continuer": ["fr": "Continuer", "en": "Continue", "de": "Weiter", "es": "Continuar", "it": "Continua", "pt": "Continuar", "pl": "Dalej", "ru": "Продолжить", "ja": "続ける"],
     "copier": ["fr": "Copier", "en": "Copy", "de": "Kopieren", "es": "Copiar", "it": "Copia", "pt": "Copiar", "pl": "Kopiuj", "ru": "Копировать", "ja": "コピー"],
 ]
 
@@ -72,7 +97,8 @@ func t(_ cle: String) -> String { textes[cle]?[langue] ?? textes[cle]?["en"] ?? 
 final class Modele: ObservableObject {
     @Published var pct = 0.0
     @Published var echec: String?
-    @Published var commande: String?   // to paste into Terminal (missing tools)
+    @Published var commande: String?   // to paste into Terminal (missing tools, Homebrew build)
+    @Published var outilsApple = false  // app build without Command Line Tools: a button reopens Apple's installer
     @Published var fini = false
     @Published var campagnePrete = false   // Steam: the campaign is linked, playable before the other two modes
     @Published var surBatterie = false
@@ -129,6 +155,8 @@ final class Modele: ObservableObject {
         if brut.hasPrefix("less than 8 GB free"),
            let n = Int(brut.drop(while: { $0 != "(" }).dropFirst().prefix(while: { $0.isNumber })) {
             echec = String(format: t("r_disque"), n)
+        } else if brut.hasPrefix("missing: Command Line Tools") {
+            echec = t("r_clt"); outilsApple = true
         } else if brut.hasPrefix("missing: brew") {
             echec = t("r_outils"); commande = "brew install llvm@17 cmake ninja libvpx unicorn"
         } else if brut.hasPrefix("missing: pip3") {
@@ -234,28 +262,30 @@ struct BoutonVerre: ButtonStyle {
     }
 }
 
-// One segment per step, filled with the step's share of the percentage. All the filled length is one gradient,
-// masked by the segments; a soft wave runs along the running step, so it visibly moves even while the step
-// prints nothing for half an hour.
+// One segment per step, filled with the step's share of the percentage, orange to light orange along the whole bar;
+// a soft wave runs along the running step, so it visibly moves even while the step prints nothing for half an hour.
+// No mask: a mask first drawn with nothing filled (window opened at 0 %) was never applied again, and the whole
+// gradient showed as one full bar.
 struct Segments: View {
     let pct: Double; let indice: Int
     let ecart: CGFloat = 8
     func part(_ i: Int) -> Double { min(max((pct - etapes[i].debut) / (etapes[i].fin - etapes[i].debut), 0), 1) }
+    func teinte(_ x: Double) -> Color { Color(red: 1, green: 0.47 + 0.23 * x, blue: 0.12 + 0.18 * x) }   // x: 0…1 along the bar
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack {
                 HStack(spacing: ecart) { ForEach(etapes.indices, id: \.self) { _ in Capsule().fill(.white.opacity(0.12)) } }
                 GeometryReader { g in
-                    let l = (g.size.width - ecart * CGFloat(etapes.count - 1)) / CGFloat(etapes.count)
-                    LinearGradient(colors: [orange, Color(red: 1, green: 0.7, blue: 0.3)], startPoint: .leading, endPoint: .trailing)
-                        .mask(alignment: .leading) {
-                            HStack(spacing: ecart) {
-                                ForEach(etapes.indices, id: \.self) { i in
-                                    Capsule().frame(width: l * part(i)).frame(width: l, alignment: .leading)
-                                }
-                            }
+                    let l = max(0, (g.size.width - ecart * CGFloat(etapes.count - 1)) / CGFloat(etapes.count))
+                    let n = Double(etapes.count)
+                    HStack(spacing: ecart) {
+                        ForEach(etapes.indices, id: \.self) { i in
+                            let x = Double(i) / n, fin = x + part(i) / n
+                            Capsule().fill(LinearGradient(colors: [teinte(x), teinte(fin)], startPoint: .leading, endPoint: .trailing))
+                                .frame(width: l * part(i)).frame(width: l, alignment: .leading)
                         }
-                        .shadow(color: orange.opacity(0.6), radius: 5)
+                    }
+                    .shadow(color: orange.opacity(0.6), radius: 5)
                     if indice < etapes.count {   // a soft wave runs along the running step only
                         let large = l * part(indice)
                         TimelineView(.animation(minimumInterval: 1.0 / 30)) { tl in
@@ -303,6 +333,23 @@ func ticket(_ raison: String) -> URL {
     return u.url!
 }
 
+struct Entete: View {
+    let texte: String
+    var icone: NSImage = NSApp.applicationIconImage
+    var body: some View {
+        HStack(spacing: 20) {
+            Image(nsImage: icone).resizable().interpolation(.high)
+                .frame(width: 76, height: 76)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: orange.opacity(0.55), radius: 22)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Black Ops II").font(.system(size: 30, weight: .bold))
+                Text(texte).font(.system(size: 15)).foregroundStyle(.white.opacity(0.6))
+            }
+        }
+    }
+}
+
 struct Vue: View {
     @ObservedObject var m: Modele
     var body: some View {
@@ -322,18 +369,7 @@ struct Vue: View {
         .environment(\.colorScheme, .dark)
     }
 
-    var entete: some View {
-        HStack(spacing: 20) {
-            Image(nsImage: NSApp.applicationIconImage).resizable().interpolation(.high)
-                .frame(width: 76, height: 76)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: orange.opacity(0.55), radius: 22)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Black Ops II").font(.system(size: 30, weight: .bold))
-                Text(t(m.fini ? "pret" : "sous_titre")).font(.system(size: 15)).foregroundStyle(.white.opacity(0.6))
-            }
-        }
-    }
+    var entete: some View { Entete(texte: t(m.fini ? "pret" : "sous_titre")) }
 
     var panneauEnCours: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -426,6 +462,10 @@ struct Vue: View {
                 Button(t("journal")) { NSWorkspace.shared.open(URL(fileURLWithPath: journal)) }.buttonStyle(BoutonVerre())
                 Button { NSWorkspace.shared.open(ticket(raison)) } label: { Label(t("signaler"), systemImage: "ladybug") }
                     .buttonStyle(BoutonVerre())
+                if m.outilsApple {   // the window build_steam.sh's `xcode-select --install` opened, if the player closed it
+                    Button { _ = try? Process.run(URL(fileURLWithPath: "/usr/bin/xcode-select"), arguments: ["--install"]) } label: {
+                        Label(t("installer"), systemImage: "arrow.down.circle") }.buttonStyle(BoutonVerre())
+                }
                 Spacer()
                 Button { exit(3) } label: { Label(t("reessayer"), systemImage: "arrow.clockwise") }
                     .buttonStyle(BoutonBlanc()).keyboardShortcut(.defaultAction)
@@ -434,24 +474,200 @@ struct Vue: View {
     }
 }
 
+// --- Welcome (--accueil): the game folder (found, dropped or picked) and the three exes install_steam.sh checks.
+enum EtatExe { case absent, enveloppe, pret }
+final class Bienvenue: ObservableObject {
+    static let steam = maison + "/.bo2-native/steam"
+    static let noms = ["t6sp.exe.unpacked.exe", "t6mp.exe.unpacked.exe", "t6zm.exe.unpacked.exe"]
+    @Published var jeu: String? { didSet { if let j = jeu { icone(j) } } }   // the game folder
+    @Published var trouve = false        // found on its own: confirmed in one click
+    @Published var refus: String?        // the folder given has no t6sp.exe
+    @Published var exes: [EtatExe] = []
+    @Published var icone: NSImage?       // the game's, once read from its t6sp.exe
+    var pret: Bool { jeu != nil && exes.allSatisfy { $0 == .pret } }
+    init() { jeu = chercher(); trouve = jeu != nil; verifier(); if let j = jeu { icone(j) } }
+
+    // The game's icon, read from its t6sp.exe as soon as the folder is known, in place of the app's own.
+    private func icone(_ d: String) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/bash")
+        p.arguments = [dossier + "/scripts/game_icon.sh", d]
+        try? p.run()   // verifier() picks up icon.png
+    }
+
+    // Same test as install_steam.sh.
+    static func valide(_ d: String) -> Bool {
+        FileManager.default.fileExists(atPath: d + "/t6sp.exe") && FileManager.default.fileExists(atPath: d + "/zone/all")
+    }
+    // The folder given before, then every Steam library (libraryfolders.vdf) and ~/Games, one level down. No Desktop,
+    // Documents or Downloads: macOS would ask the player for access before anything is shown.
+    private func chercher() -> String? {
+        let h = maison, fm = FileManager.default
+        var bases = [h + "/Library/Application Support/Steam/steamapps/common", h + "/Games"]
+        if let vdf = try? String(contentsOfFile: h + "/Library/Application Support/Steam/steamapps/libraryfolders.vdf", encoding: .utf8),
+           let re = try? NSRegularExpression(pattern: #""path"\s+"([^"]+)""#) {
+            for m in re.matches(in: vdf, range: NSRange(vdf.startIndex..., in: vdf)) {
+                if let r = Range(m.range(at: 1), in: vdf) { bases.append(String(vdf[r]) + "/steamapps/common") }
+            }
+        }
+        let avant = ["game_dir", "jeu"].compactMap { try? String(contentsOfFile: h + "/.bo2-native/" + $0, encoding: .utf8) }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let candidats = avant + bases + bases.flatMap { b in ((try? fm.contentsOfDirectory(atPath: b)) ?? []).sorted().map { b + "/" + $0 } }
+        return candidats.first(where: Bienvenue.valide)
+    }
+    func choisir(_ url: URL) {
+        let d = url.lastPathComponent.lowercased() == "t6sp.exe" ? url.deletingLastPathComponent().path : url.path
+        if Bienvenue.valide(d) { jeu = d; trouve = false; refus = nil } else { refus = String(format: t("a_pas_exe"), d) }
+    }
+    // Present, or still wrapped (the same test as install_steam.sh: ".bind" in the first 4 KB). The SHA-256 is
+    // install_steam.sh's, which the preparation window explains if it fails.
+    func verifier() {
+        let e: [EtatExe] = Bienvenue.noms.map { n in
+            guard let h = FileHandle(forReadingAtPath: Bienvenue.steam + "/" + n) else { return .absent }
+            defer { try? h.close() }
+            let debut = (try? h.read(upToCount: 4096)) ?? Data()
+            return debut.isEmpty ? .absent : debut.range(of: Data(".bind".utf8)) != nil ? .enveloppe : .pret
+        }
+        if e != exes { exes = e }
+        if icone == nil, let i = NSImage(contentsOfFile: dossier + "/icon.png") { icone = i; NSApp.applicationIconImage = i }
+    }
+    func parcourir() {
+        let p = NSOpenPanel()
+        p.canChooseDirectories = true; p.canChooseFiles = false; p.message = t("a_invite")
+        p.beginSheetModal(for: win) { r in if r == .OK, let u = p.url { self.choisir(u) } }
+    }
+}
+
+struct VueBienvenue: View {
+    @ObservedObject var b: Bienvenue
+    @State private var survol = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Entete(texte: t("sous_titre"), icone: b.icone ?? NSApp.applicationIconImage)   // the getter keeps its old object
+            panneauJeu
+            panneauExes
+            HStack {
+                Spacer()
+                Button {
+                    FileHandle.standardOutput.write(Data((b.jeu ?? "").utf8)); exit(0)
+                } label: { Label(t("a_continuer"), systemImage: "arrow.right") }
+                    .buttonStyle(BoutonBlanc()).keyboardShortcut(.defaultAction)
+                    .disabled(!b.pret).opacity(b.pret ? 1 : 0.35)
+            }
+        }
+        .padding(.horizontal, 44).padding(.top, 52).padding(.bottom, 36)
+        .frame(width: 720, alignment: .leading)
+        .background { Fond() }
+        .animation(.spring(duration: 0.4), value: b.jeu)
+        .animation(.spring(duration: 0.4), value: b.exes)
+        .foregroundStyle(.white)
+        .environment(\.colorScheme, .dark)
+    }
+
+    var panneauJeu: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if let d = b.jeu {
+                HStack(spacing: 14) {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 26)).foregroundStyle(orange)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(t(b.trouve ? "a_trouve" : "a_choisi")).font(.system(size: 15, weight: .semibold))
+                        Text(d.replacingOccurrences(of: maison, with: "~")).font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.6)).lineLimit(1).truncationMode(.middle)
+                    }
+                    Spacer()
+                    Button(t("a_autre")) { b.parcourir() }.buttonStyle(BoutonVerre())
+                }
+            } else {
+                VStack(spacing: 10) {
+                    Image(systemName: "folder.badge.plus").font(.system(size: 34)).foregroundStyle(orange)
+                    Text(t("a_glisser")).font(.system(size: 17, weight: .semibold))
+                    Text(t("a_quel")).font(.system(size: 13)).foregroundStyle(.white.opacity(0.6))
+                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                    Button(t("a_choisir")) { b.parcourir() }.buttonStyle(BoutonVerre()).padding(.top, 4)
+                }
+                .frame(maxWidth: .infinity).padding(24)
+                .background(survol ? orange.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(survol ? orange : .white.opacity(0.25), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5])))
+            }
+            if let r = b.refus {
+                Text(r).font(.system(size: 13)).foregroundStyle(Color(red: 1, green: 0.42, blue: 0.38))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(22).frame(maxWidth: .infinity, alignment: .leading).verre()
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let u = urls.first else { return false }
+            b.choisir(u); return true
+        } isTargeted: { survol = $0 }
+    }
+
+    var panneauExes: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(t("a_exes")).font(.system(size: 15, weight: .semibold))
+            ForEach(Bienvenue.noms.indices, id: \.self) { i in
+                let e = i < b.exes.count ? b.exes[i] : .absent
+                HStack(spacing: 10) {
+                    Image(systemName: e == .pret ? "checkmark.circle.fill" : e == .enveloppe ? "exclamationmark.circle.fill" : "circle.dashed")
+                        .foregroundStyle(e == .absent ? .white.opacity(0.35) : orange)
+                    Text(Bienvenue.noms[i]).font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(e == .pret ? 0.85 : 0.5))
+                }
+            }
+            if !b.exes.allSatisfy({ $0 == .pret }) {
+                Text(t(b.exes.contains(.enveloppe) ? "r_enveloppe" : "a_manque")).font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.7)).fixedSize(horizontal: false, vertical: true).padding(.top, 4)
+                HStack {
+                    Button(t("a_ouvrir")) {
+                        try? FileManager.default.createDirectory(atPath: Bienvenue.steam, withIntermediateDirectories: true)
+                        NSWorkspace.shared.open(URL(fileURLWithPath: Bienvenue.steam))
+                    }.buttonStyle(BoutonVerre())
+                    Button { NSWorkspace.shared.open(URL(string: "https://github.com/adrbn/bo2-mac#install")!) } label: {
+                        Label(t("a_readme"), systemImage: "book") }.buttonStyle(BoutonVerre())
+                }
+            }
+        }
+        .padding(22).frame(maxWidth: .infinity, alignment: .leading).verre()
+    }
+}
+
+// The mark shown until the game's icon is read from its t6sp.exe: a controller on the window's dark orange, ours.
+func marque() -> NSImage {
+    let c = 1024.0, r = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(c), pixelsHigh: Int(c), bitsPerSample: 8,
+                                         samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: r)
+    let fond = NSBezierPath(roundedRect: NSRect(x: 100, y: 100, width: 824, height: 824), xRadius: 185, yRadius: 185)
+    NSGradient(colors: [NSColor(red: 0.30, green: 0.12, blue: 0.04, alpha: 1), NSColor(red: 0.04, green: 0.03, blue: 0.03, alpha: 1)])!
+        .draw(in: fond, angle: -90)
+    let conf = NSImage.SymbolConfiguration(pointSize: 400, weight: .regular)
+        .applying(NSImage.SymbolConfiguration(paletteColors: [NSColor(red: 1, green: 0.47, blue: 0.12, alpha: 1)]))
+    if let m = NSImage(systemSymbolName: "gamecontroller.fill", accessibilityDescription: nil)?.withSymbolConfiguration(conf) {
+        m.draw(in: NSRect(x: (c - m.size.width) / 2, y: (c - m.size.height) / 2, width: m.size.width, height: m.size.height))
+    }
+    NSGraphicsContext.restoreGraphicsState()
+    let i = NSImage(size: NSSize(width: 512, height: 512)); i.addRepresentation(r); return i
+}
+
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)
-if let icone = NSImage(contentsOfFile: dossier + "/icon.png") { app.applicationIconImage = icone }
+app.applicationIconImage = NSImage(contentsOfFile: dossier + "/icon.png") ?? marque()   // never the empty or folder icon
 let modele = Modele()
+let bienvenue = accueil ? Bienvenue() : nil
 let win = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
 win.titlebarAppearsTransparent = true
 win.titleVisibility = .hidden
 win.isMovableByWindowBackground = true
 win.appearance = NSAppearance(named: .darkAqua)
 win.backgroundColor = .black
-win.contentView = NSHostingView(rootView: Vue(m: modele))
+win.contentView = NSHostingView(rootView: bienvenue.map { AnyView(VueBienvenue(b: $0)) } ?? AnyView(Vue(m: modele)))
 win.setContentSize(win.contentView!.fittingSize)
 win.center()
 win.makeKeyAndOrderFront(nil)
 app.activate(ignoringOtherApps: true)
-modele.lire()
+if !accueil { modele.lire() }
 Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-    modele.lire()
+    if let b = bienvenue { b.verifier() } else { modele.lire() }   // the exes may appear while the window is open
     let taille = win.contentView!.fittingSize   // the panel changes height (running / done / failed)
     if taille != win.contentLayoutRect.size { win.setContentSize(taille) }
 }

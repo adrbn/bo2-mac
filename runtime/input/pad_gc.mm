@@ -60,6 +60,10 @@ GCController* g_ctl = nil;
 dispatch_queue_t g_file = nullptr;
 std::vector<Etape> g_script;
 bool g_script_actif = false;
+// Pad 2 (Zombies split screen, player 2): never shown to the game through XInput, read by bo2_pad2_state.
+Gamepad g_etat2;
+GCController* g_ctl2 = nil;
+std::vector<Etape> g_script2;
 std::chrono::steady_clock::time_point g_top;
 bool g_top_donne = false;
 
@@ -83,7 +87,19 @@ void activer_gpad() {
     bo2_cmd_queue("set gpad_enabled 1");
 }
 
+Gamepad etat(GCExtendedGamepad* g);
 void lire(GCExtendedGamepad* g) {
+    const Gamepad e = etat(g);
+    std::lock_guard<std::mutex> lk(g_mu);
+    if (!g_script_actif) publier(e);
+}
+void lire2(GCExtendedGamepad* g) {
+    const Gamepad e = etat(g);
+    std::lock_guard<std::mutex> lk(g_mu);
+    if (g_script2.empty()) g_etat2 = e;
+}
+
+Gamepad etat(GCExtendedGamepad* g) {
     Gamepad e;
     auto b = [&](GCControllerButtonInput* x, uint16_t bit) { if (x && x.pressed) e.boutons |= bit; };
     b(g.dpad.up, XI_UP); b(g.dpad.down, XI_DOWN); b(g.dpad.left, XI_LEFT); b(g.dpad.right, XI_RIGHT);
@@ -94,8 +110,7 @@ void lire(GCExtendedGamepad* g) {
     e.lt = gachette(g.leftTrigger.value);  e.rt = gachette(g.rightTrigger.value);
     e.lx = axe(g.leftThumbstick.xAxis.value);  e.ly = axe(g.leftThumbstick.yAxis.value);
     e.rx = axe(g.rightThumbstick.xAxis.value); e.ry = axe(g.rightThumbstick.yAxis.value);
-    std::lock_guard<std::mutex> lk(g_mu);
-    if (!g_script_actif) publier(e);
+    return e;
 }
 
 void brancher(GCController* c) {
@@ -104,7 +119,15 @@ void brancher(GCController* c) {
         return;
     }
     { std::lock_guard<std::mutex> lk(g_mu);
-      if (g_ctl) return;                       // une seule manette, index 0
+      if (g_ctl == c || g_ctl2 == c) return;
+      if (g_ctl) {                             // index 0 taken: the second pad goes to split screen player 2
+          if (g_ctl2) return;
+          g_ctl2 = c;
+          c.handlerQueue = g_file;
+          c.extendedGamepad.valueChangedHandler = ^(GCExtendedGamepad* g, GCControllerElement*) { lire2(g); };
+          fprintf(stderr, "[PAD] second pad (split screen player 2): %s\n", c.vendorName.UTF8String ?: "?");
+          return;
+      }
       g_ctl = c; g_branchee = true; ++g_paquet; }
     c.handlerQueue = g_file;
     c.extendedGamepad.valueChangedHandler = ^(GCExtendedGamepad* g, GCControllerElement*) { lire(g); };
@@ -117,6 +140,7 @@ void brancher(GCController* c) {
 
 void debrancher(GCController* c) {
     std::lock_guard<std::mutex> lk(g_mu);
+    if (c == g_ctl2) { g_ctl2 = nil; g_etat2 = Gamepad{}; fprintf(stderr, "[PAD] second pad disconnected\n"); return; }
     if (c != g_ctl) return;
     g_ctl = nil; g_branchee = false; g_etat = Gamepad{}; ++g_paquet;
     fprintf(stderr, "[PAD] manette debranchee\n");
@@ -124,9 +148,9 @@ void debrancher(GCController* c) {
 
 // Une ligne par etape : `<secondes> <boutons hex> <lt> <rt> <lx> <ly> <rx> <ry>` ; `#` commente.
 // Les secondes comptent depuis bo2_pad_top() (le runtime l'appelle au [DB-LOADXFILE] du niveau).
-void charger_script(const char* chemin) {
+bool lire_script(const char* chemin, std::vector<Etape>& script) {
     FILE* f = fopen(chemin, "r");
-    if (!f) { fprintf(stderr, "[PAD] REFUS : BO2_PAD_SCRIPT=%s illisible\n", chemin); return; }
+    if (!f) { fprintf(stderr, "[PAD] REFUSED: script %s unreadable\n", chemin); return false; }
     char ln[256];
     int n = 0;
     while (fgets(ln, sizeof ln, f)) {
@@ -134,16 +158,20 @@ void charger_script(const char* chemin) {
         if (ln[0] == '#' || ln[0] == '\n') continue;
         double t; unsigned bt; int lt, rt, lx, ly, rx, ry;
         if (sscanf(ln, "%lf %x %d %d %d %d %d %d", &t, &bt, &lt, &rt, &lx, &ly, &rx, &ry) != 8) {
-            fprintf(stderr, "[PAD] REFUS : BO2_PAD_SCRIPT ligne %d illisible\n", n);
-            fclose(f); g_script.clear(); return;
+            fprintf(stderr, "[PAD] REFUSED: script %s line %d unreadable\n", chemin, n);
+            fclose(f); script.clear(); return false;
         }
         Gamepad g;
         g.boutons = (uint16_t)bt; g.lt = (uint8_t)lt; g.rt = (uint8_t)rt;
         g.lx = (int16_t)lx; g.ly = (int16_t)ly; g.rx = (int16_t)rx; g.ry = (int16_t)ry;
-        g_script.push_back({t, g});
+        script.push_back({t, g});
     }
     fclose(f);
-    g_script_actif = !g_script.empty();
+    return !script.empty();
+}
+void charger_script(const char* chemin) {
+    g_script_actif = lire_script(chemin, g_script);
+    if (!g_script_actif) return;
     fprintf(stderr, "[PAD] script %s : %zu etapes, index 0 branche, manette reelle ignoree\n",
             chemin, g_script.size());
 }
@@ -173,6 +201,8 @@ void initialiser() {
     static std::once_flag une;
     std::call_once(une, [] {
         g_file = dispatch_queue_create("bo2.pad", DISPATCH_QUEUE_SERIAL);
+        if (const char* s = bo2_getenv("BO2_PAD2_SCRIPT"))
+            if (lire_script(s, g_script2)) fprintf(stderr, "[PAD] pad 2 script %s: %zu steps\n", s, g_script2.size());
         if (const char* s = bo2_getenv("BO2_PAD_SCRIPT")) {
             charger_script(s);
             if (g_script_actif) { g_branchee = true; activer_gpad(); return; }
@@ -246,4 +276,29 @@ extern "C" void bo2_pad_top() {
     if (g_script_actif) fprintf(stderr, "[PAD] top du script (%llu lectures idx0 avant)\n",
                                 (unsigned long long)g_lus);
     if (g_branchee) activer_gpad();
+}
+
+// Pad 2 present (second pad connected or BO2_PAD2_SCRIPT), without starting the script clock (lobby).
+extern "C" bool bo2_pad2_present() {
+    initialiser();
+    std::lock_guard<std::mutex> lk(g_mu);
+    return !g_script2.empty() || g_ctl2 != nil;
+}
+
+// Pad 2 (split screen): 12 bytes XINPUT_GAMEPAD, 0 if none (no second pad, no BO2_PAD2_SCRIPT).
+// BO2_PAD2_SCRIPT has the BO2_PAD_SCRIPT format, but its seconds count from the first call (player 2's first cmd).
+extern "C" uint32_t bo2_pad2_state(uint8_t out[12]) {
+    initialiser();
+    std::lock_guard<std::mutex> lk(g_mu);
+    if (!g_script2.empty()) {
+        static const auto debut = std::chrono::steady_clock::now();   // seconds from player 2's first cmd
+        const double t = std::chrono::duration<double>(std::chrono::steady_clock::now() - debut).count();
+        Gamepad g;
+        for (const Etape& e : g_script2) { if (e.t <= t) g = e.g; else break; }
+        g_etat2 = g;
+    } else if (!g_ctl2) {
+        return 0;
+    }
+    std::memcpy(out, &g_etat2, 12);
+    return 1;
 }

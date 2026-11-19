@@ -87,9 +87,11 @@ def untag_fixed(fixed_bc):
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "harness"))
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REMILL = os.path.join(HERE, "remill-src/build/bin/lift/remill-lift-17")
-LLVM17 = "/opt/homebrew/opt/llvm@17"
-REM = os.path.join(HERE, "remill-src")
+# BO2_TOOLCHAIN: the app's prebuilt toolchain (scripts/make_toolchain.sh), laid out like Homebrew's opt/ plus remill/.
+OPT = os.environ.get("BO2_TOOLCHAIN", "/opt/homebrew/opt")
+REM = os.path.join(OPT, "remill") if "BO2_TOOLCHAIN" in os.environ else os.path.join(HERE, "remill-src")
+REMILL = os.path.join(REM, "build/bin/lift/remill-lift-17")
+LLVM17 = os.environ.get("LLVM17", OPT + "/llvm@17")
 # ── WHICH EXECUTABLE ────────────────────────────────────────────────────────
 # BO2_TARGET=sps|mps|zms (default sps): the three Steam executables, after the
 # player removed SteamStub from their own copy. ENTRY_VA is the real CRT entry
@@ -137,7 +139,14 @@ _TARGETS = {
                            0x83c170: "_bo2_snd_reverb_zm",
                            0x4584c0: "_bo2_cull_zm",
                            0x59b6c0: "_bo2_regles_find",
-                           0x47acf0: "_bo2_skin1", 0x47b150: "_bo2_skin2", 0x47b6d0: "_bo2_skin3", 0x47bd80: "_bo2_skin4"}),
+                           0x47acf0: "_bo2_skin1", 0x47b150: "_bo2_skin2", 0x47b6d0: "_bo2_skin3", 0x47bd80: "_bo2_skin4",
+                           # split screen (runtime/win32/split_screen.cpp, inert without BO2_SPLIT)
+                           0x55af10: "_bo2_ss_draw", 0x41c800: "_bo2_ss_send", 0x41bb80: "_bo2_ss_refdef",
+                           0x41bb10: "_bo2_ss_vp", 0x6ec9f0: "_bo2_ss_sv", 0x5d6b30: "_bo2_ss_botcmd",
+                           0x4ad550: "_bo2_ss_hud2", 0x9345b0: "_bo2_ss_lui_update", 0x9315c0: "_bo2_ss_lui_draw",
+                           0x696fe0: "_bo2_ss_lobby", 0x522bf0: "_bo2_ss_third", 0x457970: "_bo2_ss_light",
+                           0x4106f0: "_bo2_ss_add", 0x4dd1b0: "_bo2_ss_prompt", 0x539990: "_bo2_ss_arms",
+                           0x4adaa0: "_bo2_ss_revive", 0x4ca660: "_bo2_ss_hudelems"}),
 }
 if TARGET not in _TARGETS:
     raise SystemExit(f"BO2_TARGET must be one of {sorted(_TARGETS)}, got {TARGET!r}")
@@ -1644,7 +1653,8 @@ def _finish_build(args, workdir, lifted_o, bc_files, start):
                "../gfx/metal_backend.mm", "../input/pad_gc.mm", "x86_guest_vm.cpp", "interp.cpp"] + (
                    # sps : Demonware (P928), VEH (P925), peau (P781).
                    ["exception_adapter.cpp", "dw_local.cpp", "skin_native.cpp"] if TARGET == "sps" else
-                   ["exception_adapter.cpp", "dw_local.cpp", "cull_native.cpp", "skin_native.cpp", "match_rules.cpp"]):
+                   ["exception_adapter.cpp", "dw_local.cpp", "cull_native.cpp", "skin_native.cpp", "match_rules.cpp"] + (
+                   ["split_screen.cpp"] if TARGET == "zms" else [])):
         # Flat object name: `../audio/coreaudio_out.cpp` would otherwise put its
         # .o OUTSIDE workdir, in a directory that does not exist.
         ro = os.path.join(workdir,
@@ -1672,10 +1682,10 @@ def _finish_build(args, workdir, lifted_o, bc_files, start):
                             "-I", os.path.join(HERE, "..", "third_party", "HLSLcc", "include"),
                             # vpx_native.cpp includes <vpx/vpx_decoder.h> from
                             # the brew libvpx.
-                            "-I", "/opt/homebrew/opt/libvpx/include",
+                            "-I", OPT + "/libvpx/include",
                             # heap_code.cpp, exception_adapter.cpp : Unicorn execute du
                             # code x86 d'origine (tas, gestionnaires d'exception).
-                            "-I", "/opt/homebrew/opt/unicorn/include",
+                            "-I", OPT + "/unicorn/include",
                             "-o", ro, os.path.join(HERE, "..", "runtime", "win32", rf)],
                            capture_output=True, text=True, timeout=600)
         # 🪤 THIS USED TO BE `if r.returncode == 0: append`, WITH NO ELSE. A shim
@@ -1910,8 +1920,8 @@ int main(int argc,char** argv) {
         ["-framework", "ApplicationServices", "-framework", "AudioToolbox",
          "-framework", "Cocoa", "-framework", "Metal", "-framework", "QuartzCore",
          "-framework", "GameController", "-framework", "IOKit",
-         "-lm", "-lz", "/opt/homebrew/opt/libvpx/lib/libvpx.a",
-         "/opt/homebrew/opt/unicorn/lib/libunicorn.a",
+         "-lm", "-lz", OPT + "/libvpx/lib/libvpx.a",
+         OPT + "/unicorn/lib/libunicorn.a",
          # HLSLcc provides TranslateHLSLFromMem, which dxbc_to_msl.cpp calls.
          os.path.join(HERE, "..", "boot_cache", "hlslcc_build", "libhlslcc.dylib")],
                        capture_output=True, text=True, timeout=900)
@@ -1970,8 +1980,8 @@ int main(int argc,char** argv) {
                                     "-framework", "AudioToolbox", "-framework", "Cocoa", "-framework", "GameController",
                                     "-framework", "Metal", "-framework", "QuartzCore", "-framework", "IOKit",
                                     "-lm", "-lz",
-                                    "/opt/homebrew/opt/libvpx/lib/libvpx.a",
-                                    "/opt/homebrew/opt/unicorn/lib/libunicorn.a",
+                                    OPT + "/libvpx/lib/libvpx.a",
+                                    OPT + "/unicorn/lib/libunicorn.a",
                                     os.path.join(HERE, "..", "boot_cache",
                                                  "hlslcc_build", "libhlslcc.dylib")],
                                    capture_output=True, text=True, timeout=900)

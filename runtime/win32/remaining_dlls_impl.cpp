@@ -854,6 +854,60 @@ static float half_to_float(uint16_t h) {
 }
 static float geo_f32(uint32_t va) { uint32_t u = win32_mem_read32(va); float f; memcpy(&f, &u, 4); return f; }
 
+// --- Zombies split screen (BO2_SPLIT, runtime/win32/split_screen.cpp) --------------------------------------------------
+// The final copy of each view to the screen (bound from 0x46ae3b, called through 0x46c439 from 0x4613f9) sets a
+// full-target viewport; it is brought back to the view rectangle (current view [0x3956878], +0x160 = x, y, w, h), so
+// pass A lands in the top half and pass B in the bottom half. Before pass B the offscreen depth size is forgotten
+// (clear with dsv_res = 0) so B clears its own depth instead of loading A's. After B's copy, the 2D of each half is
+// boxed to a 960x540-style frame centred in its half (scoreboard and pause menu too).
+#ifdef BO2_TARGET_ZMS
+static bool g_ss_copy = false;   // the bound target is the final copy of a view
+static int g_ss_ui = 0;          // 1 = A's 2D in progress (after B's copy), 2 = B's 2D placed
+static bool ss_split() { static const bool on = bo2_getenv("BO2_SPLIT") != nullptr; return on; }
+static void ss_bind(uint32_t esp) {
+    if (ss_split() && win32_mem_read32(esp) == 0x46ae3b)
+        g_ss_copy = win32_mem_read32(esp + 0x34) == 0x46c439 && win32_mem_read32(esp + 0x44) == 0x4613f9;
+}
+static bool ss_scoreboard_open() { const uint32_t cg = win32_mem_read32(0x105f75c); return cg && win32_mem_read32(cg + 0x69568); }
+static bool ss_paused() { const uint32_t d = win32_mem_read32(0x106287c); return d && win32_mem_read32(d + 0x18); }
+static void ss_put_rect(uint32_t p, const float r[4]) {
+    for (int i = 0; i < 4; i++) { uint32_t u; memcpy(&u, &r[i], 4); win32_mem_write32(p + i * 4, u); }
+}
+static void ss_viewport(uint32_t esp, uint32_t n, uint32_t p) {
+    if (!ss_split() || !n || !p) return;
+    if (g_ss_copy) {
+        const uint32_t view = win32_mem_read32(0x3956878), v = view ? view : 0x3956878;
+        const float W = geo_f32(p + 8), H = geo_f32(p + 12);
+        const int x = (int)win32_mem_read32(v + 0x160), y = (int)win32_mem_read32(v + 0x164),
+                  l = (int)win32_mem_read32(v + 0x168), h = (int)win32_mem_read32(v + 0x16c);
+        if (view && geo_f32(p) == 0.f && geo_f32(p + 4) == 0.f && x >= 0 && y >= 0 && l > 0 && h > 0 && x + l <= W &&
+            y + h <= H && (l < W || h < H)) {
+            const float r[4] = {(float)x, (float)y, (float)l, (float)h};
+            ss_put_rect(p, r);
+            static uint32_t k = 0;
+            if ((++k & (k - 1)) == 0) fprintf(stderr, "[SPLIT] copy #%u %gx%g -> %d,%d %dx%d\n", k, W, H, x, y, l, h);
+            const bool a_done = y == 0;   // A's copy: the next draws are B's
+            g_ss_ui = !a_done;
+            if (a_done && g_window_gfx) {
+                GfxDraw cl{};
+                cl.is_clear = 3; cl.rtv = ~0u; cl.dsv_res = 0; cl.dsv_wh = (uint32_t)W << 16 | (uint32_t)H;
+                gfx_real_draw(&cl);
+            }
+        }
+    }
+    if (g_ss_ui && g_backbuffer_rtv && g_cur_rtv == g_backbuffer_rtv) {
+        const float X = geo_f32(p), Y = geo_f32(p + 4), W = geo_f32(p + 8), H = geo_f32(p + 12);
+        float r[4] = {0, 0, 0, 0};
+        if (g_ss_ui == 1 && win32_mem_read32(esp) == 0x46c067 && X == 0.f && Y > 0.f && W > 0.f && H > 0.f) {
+            r[0] = W / 4; r[1] = Y; r[2] = W / 2; r[3] = H; g_ss_ui = 2;
+        } else if (g_ss_ui == 1 && X == 0.f && Y == 0.f && W >= 1024.f && H >= 576.f && (ss_scoreboard_open() || ss_paused())) {
+            r[0] = W / 4; r[1] = 0; r[2] = W / 2; r[3] = H / 2;
+        }
+        if (r[2] > 0.f) ss_put_rect(p, r);
+    }
+}
+#endif
+
 // --- LIVE 2D UI -> Metal (Gate B step 3) ------------------------------------
 // Same decode as the offline capture, but the triangles go straight to the Metal
 // window instead of a text file: DrawIndexed appends to a per-frame vertex list
@@ -5107,7 +5161,11 @@ extern "C" bool d3d_vtbl_dispatch(State& s, uint32_t addr) {
                                 dt->second.pitch, tb[0], tb[1], tb[2], tb[3]);
                 }
                 break; }
-            case 44: if (g_track) {              // RSSetViewports(Num,pViewports)
+            case 44:
+#ifdef BO2_TARGET_ZMS
+                     ss_viewport(esp, arg(1), arg(2));
+#endif
+                     if (g_track) {              // RSSetViewports(Num,pViewports)
                         uint32_t n = arg(1), p = arg(2);
                         if (p) for (uint32_t i=0;i<n&&i<8;i++) { uint32_t vp = p + i*24;
                             if (i == 0) {        // the UI pass renders into vp[0]
@@ -5415,6 +5473,9 @@ extern "C" bool d3d_vtbl_dispatch(State& s, uint32_t addr) {
             case 33: if (g_track) {              // OMSetRenderTargets(Num,ppRTVs,pDSV)
                         uint32_t pp = arg(2);
                         g_cur_rtv = pp ? win32_mem_read32(pp) : 0;
+#ifdef BO2_TARGET_ZMS
+                        ss_bind(esp);
+#endif
                         // ...and the DEPTH-STENCIL VIEW, arg 3. Which depth buffer a
                         // pass writes decides whether two passes share one, and the
                         // backend cannot allocate per-pass depth without it.

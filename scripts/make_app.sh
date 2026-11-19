@@ -9,11 +9,19 @@
 # for the game folder, then install_steam.sh and build_steam.sh translate the player's own Steam executables into
 # ~/.bo2-native/app-local, behind the preparation window (tools/setup_window.swift). The bundle stays read-only, so its
 # signature holds. `--from-source` is accepted for compatibility (it is the only mode).
+# No Terminal for the player: when boot_cache/toolchain exists (scripts/make_toolchain.sh; BO2_TOOLCHAIN_SRC: another
+# folder), the bundle carries it (LLVM 17, Remill, libvpx, Unicorn, HLSLcc, capstone) and the player only needs Apple's
+# Command Line Tools, which the preparation window asks macOS to install.
+# Release: BO2_SIGN="Developer ID Application" signs every binary with the hardened runtime (team 2TWQF4T93E), and
+# BO2_NOTARY=<notarytool keychain profile> then has Apple notarize the bundle and staples the ticket. BO2_RELEASE=<tag
+# of the GitHub release it is built for>: the app offers the newer releases at launch (scripts/update_app.sh).
 set -eu
 ICI="$(cd "$(dirname "$0")/.." && pwd)"
 [ "${1:-}" = --from-source ] && shift
 DEST="${1:-/Applications}"
 APP="$DEST/${BO2_APP_NAME:-Black Ops II}.app"   # BO2_APP_NAME: another bundle name
+TC="${BO2_TOOLCHAIN_SRC:-$ICI/boot_cache/toolchain}"
+MINOS=14.0; [ -f "$TC/minos" ] && MINOS=$(cat "$TC/minos")   # the toolchain's binaries set the oldest macOS
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cat > "$APP/Contents/Info.plist" <<EOF
@@ -27,55 +35,77 @@ cat > "$APP/Contents/Info.plist" <<EOF
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>2.0</string>
-  <key>LSMinimumSystemVersion</key><string>13.0</string>
+  <key>LSMinimumSystemVersion</key><string>$MINOS</string>
 </dict></plist>
 EOF
 
 # The mini-repository: same relative paths as in the repository, so the launchers and the relay need not know.
 B="$APP/Contents/Resources/bo2"
 mkdir -p "$B"
-rsync -a --exclude .git --exclude boot_cache --exclude runs --exclude bin --exclude 'tools/*-src' "$ICI/" "$B/"
-swiftc -O -o "$APP/Contents/MacOS/preparation" "$ICI/tools/setup_window.swift"
+# Tracked files only (with their uncommitted edits): nothing untracked of this checkout leaves the Mac.
+(cd "$ICI" && git ls-files -z | tar --null -T - -cf -) | tar -xf - -C "$B"   # macOS rsync has no --from0
+[ ! -d "$TC" ] || ditto "$TC" "$APP/Contents/Resources/toolchain"
+swiftc -O -target arm64-apple-macos$MINOS -o "$APP/Contents/MacOS/preparation" "$ICI/tools/setup_window.swift"
+I="$(mktemp -d)/AppIcon.iconset"; mkdir -p "$I"   # our neutral mark until the player's t6sp.exe gives the game's icon
+"$APP/Contents/MacOS/preparation" --icone "$I/icon_512x512@2x.png"
+for s in 16 32 128 256 512; do sips -z $s $s "$I/icon_512x512@2x.png" --out "$I/icon_${s}x${s}.png" >/dev/null
+  [ $s = 512 ] || sips -z $((s * 2)) $((s * 2)) "$I/icon_512x512@2x.png" --out "$I/icon_${s}x${s}@2x.png" >/dev/null; done
+iconutil -c icns "$I" -o "$APP/Contents/Resources/AppIcon.icns"
+# The bundle's executable is a Mach-O that runs Resources/launcher.sh: the notary service signs and checks Mach-O.
+printf '%s\n' '#include <libgen.h>' '#include <mach-o/dyld.h>' '#include <stdio.h>' '#include <unistd.h>' \
+  'int main(void) { char p[4096], s[4200]; uint32_t n = sizeof p; if (_NSGetExecutablePath(p, &n)) return 1;' \
+  '  snprintf(s, sizeof s, "%s/../Resources/launcher.sh", dirname(p)); execl("/bin/bash", "bash", s, (char *)0); return 1; }' \
+  | clang -O2 -mmacosx-version-min=$MINOS -x c -o "$APP/Contents/MacOS/BlackOpsII" -
 touch "$APP/Contents/Resources/from-source"
 echo "$(date '+%Y-%m-%d %H:%M:%S') $(git -C "$ICI" rev-parse --short HEAD)" > "$APP/Contents/Resources/version"
+[ -z "${BO2_RELEASE:-}" ] || echo "$BO2_RELEASE" > "$APP/Contents/Resources/release"
 
-cat > "$APP/Contents/MacOS/BlackOpsII" <<'EOF'
+cat > "$APP/Contents/Resources/launcher.sh" <<'EOF'
 #!/bin/bash
 # Clones Resources/bo2 into ~/.bo2-native/app-local when the version changes (the working copy, where the game writes), then launches.
-R="$(cd "$(dirname "$0")/../Resources" && pwd)"
+R="$(cd "$(dirname "$0")" && pwd)"
 W="$HOME/.bo2-native/app-local"
 exec >> "$HOME/Library/Logs/BlackOpsII.log" 2>&1
 export PATH="$PATH:/opt/homebrew/bin"   # launched by Finder: no Homebrew cmake/ninja; appended, so python3 stays the one that passed the capstone check
 echo "--- $(date +%H:%M:%S) bundle $(cat "$R/version")"
-case "$(defaults read -g AppleLanguages 2>/dev/null | tr -dc 'a-zA-Z-\n' | sed -n 2p | cut -c1-2)" in   # folder prompt, no exe, copy failed
-  fr) T1="Choisissez le dossier de Black Ops II (celui qui contient t6sp.exe)"; T2="Aucun t6sp.exe dans"; T3="Copie impossible vers";;
-  de) T1="Wählen Sie den Ordner von Black Ops II (der t6sp.exe enthält)"; T2="Keine t6sp.exe in"; T3="Kopieren nicht möglich nach";;
-  es) T1="Elija la carpeta de Black Ops II (la que contiene t6sp.exe)"; T2="No hay t6sp.exe en"; T3="No se puede copiar a";;
-  it) T1="Scelga la cartella di Black Ops II (quella che contiene t6sp.exe)"; T2="Nessun t6sp.exe in"; T3="Impossibile copiare in";;
-  pt) T1="Escolha a pasta do Black Ops II (a que contém o t6sp.exe)"; T2="Nenhum t6sp.exe em"; T3="Não foi possível copiar para";;
-  pl) T1="Folder Black Ops II (zawierający t6sp.exe)"; T2="Brak t6sp.exe w"; T3="Nie można skopiować do";;
-  ru) T1="Выберите папку Black Ops II (в которой лежит t6sp.exe)"; T2="Нет t6sp.exe в"; T3="Не удалось скопировать в";;
-  ja) T1="Black Ops IIのフォルダ（t6sp.exeがあるフォルダ）を選択してください"; T2="t6sp.exeが見つかりません:"; T3="コピーできません:";;
-  *)  T1="Choose the Black Ops II folder (the one containing t6sp.exe)"; T2="No t6sp.exe in"; T3="Cannot copy to";;
+case "$(defaults read -g AppleLanguages 2>/dev/null | tr -dc 'a-zA-Z-\n' | sed -n 2p | cut -c1-2)" in   # copy failed
+  fr) T3="Copie impossible vers";;
+  de) T3="Kopieren nicht möglich nach";;
+  es) T3="No se puede copiar a";;
+  it) T3="Impossibile copiare in";;
+  pt) T3="Não foi possível copiar para";;
+  pl) T3="Nie można skopiować do";;
+  ru) T3="Не удалось скопировать в";;
+  ja) T3="コピーできません:";;
+  *)  T3="Cannot copy to";;
 esac
 alerte() { osascript -e "display alert \"Black Ops II\" message \"$1\"" >/dev/null; exit 1; }
 G="$HOME/.bo2-native/game_dir"; [ -s "$G" ] || [ ! -s "$HOME/.bo2-native/jeu" ] || G="$HOME/.bo2-native/jeu"   # older name
-if [ ! -s "$G" ]; then
-  J=$(osascript -e "POSIX path of (choose folder with prompt \"$T1\")") || exit 1
-  J="${J%/}"; [ -f "$J/t6sp.exe" ] || alerte "$T2 $J"
-  mkdir -p "$HOME/.bo2-native" && printf '%s\n' "$J" > "$G"
-fi
 E=$(cat "$W/preparation.pid" 2>/dev/null) || true   # a conversion running: its sources stay, the copy waits for the next launch
+# A newer release, at most once a day and never during a conversion: installed in the app's place on the player's yes,
+# then opened (scripts/update_app.sh).
+if [ -z "$E" ] || ! kill -0 "$E" 2>/dev/null; then
+  bash "$R/bo2/scripts/update_app.sh" "${R%/Contents/Resources}"; [ $? != 10 ] || exec open -n "${R%/Contents/Resources}"
+fi
 if ! cmp -s "$R/version" "$W/.version" && { [ -z "$E" ] || ! kill -0 "$E" 2>/dev/null; }; then
   echo "working copy -> $W"
   mkdir -p "$W" && ditto --clone "$R/bo2" "$W" && cp "$R/version" "$W/.version" || alerte "$T3 $W"
 fi
+# The bundle's tools, read in place (it may move, or be translocated) through a link with no space in its path: the
+# build scripts take tool paths unquoted, and the bundle is "Black Ops II.app".
+[ ! -d "$R/toolchain" ] || { ln -sfn "$R/toolchain" "$W/.toolchain" && export BO2_TOOLCHAIN="$W/.toolchain"; }
 mkdir -p "$W/boot_cache" && echo "${R%/Contents/Resources}" > "$W/boot_cache/app_path"   # reopened by play_steam.sh
 C=$(cat "$W/boot_cache/conversion_target" 2>/dev/null); case "$C" in sps|zms) ;; *) C=mps ;; esac   # the modes asked for (issue #3)
+# Welcome window: the game folder and the three prepared exes, before anything runs (tools/setup_window.swift --accueil).
+[ ! -s "$G" ] || bash "$W/scripts/game_icon.sh" "$(cat "$G")" || true   # the game's icon in the window, when the folder is known
+X=0; for e in t6sp t6mp t6zm; do [ -s "$HOME/.bo2-native/steam/$e.exe.unpacked.exe" ] || X=1; done
+if [ ! -s "$G" ] || { [ $X = 1 ] && [ ! -x "$W/boot_cache/$C/boot" ]; }; then
+  J=$("$R/../MacOS/preparation" --accueil) && [ -n "$J" ] || exit 0   # window closed
+  mkdir -p "$HOME/.bo2-native" && printf '%s\n' "$J" > "$G"
+fi
 # First launch: translate the player's exes. After an update, again what its sources changed (scripts/signature.sh).
 if [ -f "$R/from-source" ] && { [ ! -x "$W/boot_cache/$C/boot" ] || ! bash "$W/scripts/signature.sh" check; }; then
-  [ -s "$W/icon.png" ] || { python3 "$W/tools/exe_icon.py" "$(cat "$G")/t6sp.exe" "$W/icon.ico" \
-    && sips -s format png "$W/icon.ico" --out "$W/icon.png" >/dev/null && bash "$W/scripts/icon_margin.sh" "$W/icon.png"; } || true
+  bash "$W/scripts/game_icon.sh" "$(cat "$G")" || true
   while :; do
     P=$(cat "$W/preparation.pid" 2>/dev/null) || true
     if [ -z "$P" ] || ! kill -0 "$P" 2>/dev/null; then            # a preparation already running: just show it
@@ -84,7 +114,7 @@ if [ -f "$R/from-source" ] && { [ ! -x "$W/boot_cache/$C/boot" ] || ! bash "$W/s
       P=$!; echo $P > "$W/preparation.pid"
       caffeinate -i -w "$P" &                                     # no sleep while the preparation runs
     fi
-    "$(dirname "$0")/preparation" "$W/preparation.log" "$P"; rc=$?
+    "$R/../MacOS/preparation" "$W/preparation.log" "$P"; rc=$?
     [ $rc = 3 ] || break                                          # 3 = "Try Again" (build_steam.sh resumes)
   done
   if [ $rc = 4 ]; then                                            # 4 = play the campaign now: stop the whole conversion tree
@@ -97,8 +127,24 @@ if [ -f "$R/from-source" ] && { [ ! -x "$W/boot_cache/$C/boot" ] || ! bash "$W/s
 fi
 cd "$W" && exec env BO2_PANNEAU=0 MTL_HUD_ENABLED=0 BO2_TITRE=0 scripts/launch.sh campagne
 EOF
-chmod +x "$APP/Contents/MacOS/BlackOpsII"
+chmod +x "$APP/Contents/Resources/launcher.sh"
 
-codesign -s - --force "$APP" 2>/dev/null || true   # ad-hoc signature: Gatekeeper does not open an unsigned bundle
+if [ -n "${BO2_SIGN:-}" ]; then   # inside out: every Mach-O, then the bundle, which seals the rest
+  find "$APP/Contents" -type f | while read -r f; do
+    if file -b "$f" | grep -q Mach-O; then
+      codesign -s "$BO2_SIGN" -f -o runtime --timestamp "$f" 2>/dev/null || { echo "codesign failed: $f"; exit 1; }
+    fi
+  done
+  codesign -s "$BO2_SIGN" -f -o runtime --timestamp "$APP"
+  codesign --verify --deep --strict "$APP"
+  codesign -dv "$APP" 2>&1 | grep -q '^TeamIdentifier=2TWQF4T93E$' || { echo "not signed by team 2TWQF4T93E"; exit 1; }
+else
+  codesign -s - --force "$APP" 2>/dev/null || true   # ad-hoc signature: Gatekeeper does not open an unsigned bundle
+fi
+if [ -n "${BO2_NOTARY:-}" ]; then   # Apple's check of the zip, then the ticket stapled so Gatekeeper needs no network
+  Z="$(mktemp -d)/bo2-mac.zip"; ditto -c -k --keepParent "$APP" "$Z"
+  xcrun notarytool submit "$Z" --keychain-profile "$BO2_NOTARY" --wait | tee /dev/stderr | grep -q 'status: Accepted'
+  xcrun stapler staple "$APP"; rm -rf "$(dirname "$Z")"
+fi
 touch "$APP"
 echo "$APP"
