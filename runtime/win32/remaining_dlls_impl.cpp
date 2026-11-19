@@ -2177,7 +2177,17 @@ extern "C" bool steam_vtbl_dispatch(State& s, uint32_t addr) {
         }
         if (iface == IF_APPS && slot == 0) { ret(r.sub(r.apps, kSteamAppId), 0); return true; }
         if (iface == IF_APPS && slot == 6) { ret(r.sub(r.apps, win32_mem_read32(esp + 4)), 1); return true; }
-        if (iface == IF_APPS && slot == 7) { ret(r.dlc(r.apps, win32_mem_read32(esp + 4)), 1); return true; }
+        // BIsDlcInstalled asks Steam whether the DLC depot is installed on THIS machine. Steam for Mac never installs the
+        // Windows depots of BO2, so it says no even when the account owns the DLC and its files are in the game folder
+        // (reported on r/macgaming, 13/11). Ownership is the answer here; the files come from the game folder as before.
+        if (iface == IF_APPS && slot == 7) {
+            const uint32_t id = win32_mem_read32(esp + 4);
+            const bool owned = r.sub(r.apps, id), installed = r.dlc(r.apps, id);
+            static DiagCounter<6> seen;   // 64 appids
+            if (seen.bump(id) == 0) fprintf(stderr, "[STEAM-DLC] %u owned %d installed %d\n", id, owned, installed);
+            ret(owned || installed, 1);
+            return true;
+        }
     }
 
     // Arity (the ABI of the interface) of every method, from Valve's public Steamworks headers by
