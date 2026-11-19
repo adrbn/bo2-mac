@@ -867,7 +867,10 @@ static ProfDsv* prof_dsv(uint32_t res, uint32_t wh) {
 // ClearDepthStencilView(…, DEPTH, v): load action of the next pass that attaches it. The plane exists from this clear
 // on, not from its first draw: an atlas the game clears and draws no caster into (a map without shadow geometry) is
 // still sampled, and must read v, not the colour stand-in of g_texreg (every lookup "occluded", the world black).
+// res = 0 (Zombies split screen, BO2_SPLIT): forget size wh in g_depth_cleared so the next pass at that size clears its
+// depth; otherwise pass B loads pass A's depth (same offscreen target). Game clears always carry a nonzero res.
 static void prof_efface(uint32_t res, float v, uint32_t wh) {
+    if (!res) { g_depth_cleared.erase((uint64_t)(wh >> 16) << 32 | (wh & 0xffff)); return; }
     prof_dsv(res, wh);
     ProfDsv& p = g_prof_dsv[res];
     p.efface = v; p.du_jeu = true; ++p.n_eff_recus;

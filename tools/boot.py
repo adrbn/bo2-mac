@@ -139,7 +139,14 @@ _TARGETS = {
                            0x83c170: "_bo2_snd_reverb_zm",
                            0x4584c0: "_bo2_cull_zm",
                            0x59b6c0: "_bo2_regles_find",
-                           0x47acf0: "_bo2_skin1", 0x47b150: "_bo2_skin2", 0x47b6d0: "_bo2_skin3", 0x47bd80: "_bo2_skin4"}),
+                           0x47acf0: "_bo2_skin1", 0x47b150: "_bo2_skin2", 0x47b6d0: "_bo2_skin3", 0x47bd80: "_bo2_skin4",
+                           # split screen (runtime/win32/split_screen.cpp, inert without BO2_SPLIT)
+                           0x55af10: "_bo2_ss_draw", 0x41c800: "_bo2_ss_send", 0x41bb80: "_bo2_ss_refdef",
+                           0x41bb10: "_bo2_ss_vp", 0x6ec9f0: "_bo2_ss_sv", 0x5d6b30: "_bo2_ss_botcmd",
+                           0x4ad550: "_bo2_ss_hud2", 0x9345b0: "_bo2_ss_lui_update", 0x9315c0: "_bo2_ss_lui_draw",
+                           0x696fe0: "_bo2_ss_lobby", 0x522bf0: "_bo2_ss_third", 0x457970: "_bo2_ss_light",
+                           0x4106f0: "_bo2_ss_add", 0x4dd1b0: "_bo2_ss_prompt", 0x539990: "_bo2_ss_arms",
+                           0x4adaa0: "_bo2_ss_revive", 0x4ca660: "_bo2_ss_hudelems"}),
 }
 if TARGET not in _TARGETS:
     raise SystemExit(f"BO2_TARGET must be one of {sorted(_TARGETS)}, got {TARGET!r}")
@@ -1646,7 +1653,8 @@ def _finish_build(args, workdir, lifted_o, bc_files, start):
                "../gfx/metal_backend.mm", "../input/pad_gc.mm", "x86_guest_vm.cpp", "interp.cpp"] + (
                    # sps : Demonware (P928), VEH (P925), peau (P781).
                    ["exception_adapter.cpp", "dw_local.cpp", "skin_native.cpp"] if TARGET == "sps" else
-                   ["exception_adapter.cpp", "dw_local.cpp", "cull_native.cpp", "skin_native.cpp", "match_rules.cpp"]):
+                   ["exception_adapter.cpp", "dw_local.cpp", "cull_native.cpp", "skin_native.cpp", "match_rules.cpp"] + (
+                   ["split_screen.cpp"] if TARGET == "zms" else [])):
         # Flat object name: `../audio/coreaudio_out.cpp` would otherwise put its
         # .o OUTSIDE workdir, in a directory that does not exist.
         ro = os.path.join(workdir,

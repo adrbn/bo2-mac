@@ -8,7 +8,9 @@ T=$1; W=boot_cache/$T/natif; L=${LLVM17:-/opt/homebrew/opt/llvm@17}/bin; mkdir -
 case $T in
   sps) TOUS=(47b080 47b4e0 47ba60 47c110) ;;
   mps) TOUS=(59a120 459800 459ce0 45a150 47ab10 47af70 47b4f0 47bba0) ;;
-  zms) TOUS=(59b6c0 4584c0 47acf0 47b150 47b6d0 47bd80) ;;
+  zms) TOUS=(59b6c0 4584c0 47acf0 47b150 47b6d0 47bd80
+            55af10 41c800 41bb80 41bb10 6ec9f0 5d6b30 4ad550 9345b0 9315c0 696fe0 522bf0 457970 4106f0 4dd1b0 539990
+            4adaa0 4ca660) ;;
   *) echo "usage: native_impl.sh sps|mps|zms"; exit 1 ;;
 esac
 VAS=()
