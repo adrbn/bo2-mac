@@ -629,9 +629,13 @@ extern "C" __attribute__((used)) void* bo2_ss_draw(State* s, uint32_t pc, void* 
     if (!g_ready && !(g_ready = prepare())) { g_refused = true; return sub_55af10_impl(s, pc, mem); }
     const uint32_t sp = s->gpr.rsp.dword, ret = g32(sp);
 
-    if (!g_bot && g_passes == 64) {
-        if (!bo2_pad2_present()) fprintf(stderr, "[SPLIT-P2] no second pad (nor BO2_PAD2_SCRIPT): one player\n");
-        else if (!g_bot_requested) {
+    // Player 2 joins once round 1 has begun: added during the round intro (round still 0), the game froze in 2 runs of 4.
+    const uint32_t snap = g32(g32(kCgPtr) + 0x28);
+    const bool round_on = snap && (int32_t)g32(snap + 0x23b10) >= 1;
+    if (!g_bot && g_passes == 64 && !bo2_pad2_present())
+        fprintf(stderr, "[SPLIT-P2] no second pad (nor BO2_PAD2_SCRIPT): one player\n");
+    if (!g_bot && g_passes >= 64 && round_on && bo2_pad2_present()) {
+        if (!g_bot_requested) {
             const uint32_t d = g32(kMaxClients);
             if (d && g32(d + 0x18) == 1) w32(d + 0x18, 2);
             g_bot_requested = true;   // served by the server frame (bo2_ss_sv)
