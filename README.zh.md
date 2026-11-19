@@ -18,6 +18,8 @@
 <a href="#发现"><img src="docs/assets/btn-findings.svg" alt="发现" height="40"></a>&nbsp;
 <a href="#路线图"><img src="docs/assets/btn-roadmap.svg" alt="路线图" height="40"></a>
 
+<a href="https://news.ycombinator.com/item?id=50449891"><img src="docs/assets/btn-hackernews.svg" alt="Featured on Hacker News" height="44"></a>
+
 ![source: x86-32 Windows](https://img.shields.io/badge/source-x86--32%20Windows-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![target: ARM64 macOS](https://img.shields.io/badge/target-ARM64%20macOS-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![lifter: Remill, LLVM 17](https://img.shields.io/badge/lifter-Remill%20%E2%86%92%20LLVM%2017-ff6a00?style=flat-square&labelColor=0b0b0c)
@@ -294,7 +296,8 @@ scripts/make_app.sh --from-source
 6. **更快，且不发热**：战役受限于调度线程而不是渲染；11 个机器人的多人模式受限于服务器线程。下一步是把最热的函数
    改写为原生代码，然后为 120 Hz 屏幕提供高于 60 的帧率。
 7. **手柄**：振动和辅助瞄准。
-8. **一起玩**：真正的 UDP 套接字，用于僵尸模式合作、Grief 和 Turned，以及局域网多人模式。
+8. **一起玩**：真正的 UDP 套接字，用于僵尸模式合作、Grief 和 Turned，以及局域网多人模式。之后是 PC 版从未有过的本地分屏：
+   两份游戏画在同一个窗口里，每人一个手柄，通过这个局域网连接。
 9. **以后**：MetalFX、呈现时的后处理，以及从玩家自己的副本加载的替换纹理。
 
 <img src="docs/assets/rule-11.svg" alt="" width="100%">
@@ -317,5 +320,15 @@ scripts/make_app.sh --from-source
 
 这是一个非官方粉丝项目。Call of Duty 和 Black Ops 是 Activision Publishing, Inc. 的商标。Steam 是 Valve Corporation
 的商标。本项目与 Activision、Treyarch、Microsoft 或 Valve 无关，未获得其认可或赞助。想玩，请购买正版游戏。
+
+## Star 历史
+
+<a href="https://www.star-history.com/#adrbn/bo2-mac&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date" />
+  </picture>
+</a>
 
 <div align="center"><img src="docs/assets/footer.svg" alt="" width="100%"></div>

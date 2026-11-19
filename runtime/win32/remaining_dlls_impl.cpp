@@ -872,6 +872,7 @@ extern "C" int bo2_dxbc_to_msl(const void* dxbc, uint32_t len, char** out_msl);
 extern "C" void bo2_msl_free(char* p);
 extern "C" void gfx_register_shader2(uint32_t obj, int is_pixel, const char* msl,
                                     const char* attrs);
+extern "C" bool gfx_shaders_open(void);
 
 extern "C" void gfx_register_texture(uint32_t obj, uint32_t w, uint32_t h, uint32_t fmt,
                                      const void* data, uint32_t bytes, uint32_t pitch);
@@ -2176,7 +2177,17 @@ extern "C" bool steam_vtbl_dispatch(State& s, uint32_t addr) {
         }
         if (iface == IF_APPS && slot == 0) { ret(r.sub(r.apps, kSteamAppId), 0); return true; }
         if (iface == IF_APPS && slot == 6) { ret(r.sub(r.apps, win32_mem_read32(esp + 4)), 1); return true; }
-        if (iface == IF_APPS && slot == 7) { ret(r.dlc(r.apps, win32_mem_read32(esp + 4)), 1); return true; }
+        // BIsDlcInstalled asks Steam whether the DLC depot is installed on THIS machine. Steam for Mac never installs the
+        // Windows depots of BO2, so it says no even when the account owns the DLC and its files are in the game folder
+        // (reported on r/macgaming, 13/11). Ownership is the answer here; the files come from the game folder as before.
+        if (iface == IF_APPS && slot == 7) {
+            const uint32_t id = win32_mem_read32(esp + 4);
+            const bool owned = r.sub(r.apps, id), installed = r.dlc(r.apps, id);
+            static DiagCounter<6> seen;   // 64 appids
+            if (seen.bump(id) == 0) fprintf(stderr, "[STEAM-DLC] %u owned %d installed %d\n", id, owned, installed);
+            ret(owned || installed, 1);
+            return true;
+        }
     }
 
     // Arity (the ABI of the interface) of every method, from Valve's public Steamworks headers by
@@ -3134,6 +3145,11 @@ static void impl_D3D11CreateDeviceAndSwapChain(State& s) {
 // pendant le chargement de la carte ; a la premiere liaison, chaque nouveau shader fige une image en pleine partie.
 static void translate_shader(uint32_t so, int slot) {
     if (!g_window_gfx || g_sh_done[so]) return;
+    if (!gfx_shaders_open()) {                    // fenetre pas encore ouverte : traduit a la premiere liaison
+        static uint32_t nrep = 0;
+        if (++nrep <= 3) fprintf(stderr, "[MSL-REPORT] %u shader(s) cree(s) avant la fenetre : traduits a la liaison\n", nrep);
+        return;
+    }
     auto it = g_sh_bc.find(so);
     if (it == g_sh_bc.end() || it->second.empty()) return;
     g_sh_done[so] = 1;

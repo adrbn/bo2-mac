@@ -18,6 +18,8 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 <a href="#findings"><img src="docs/assets/btn-findings.svg" alt="Findings" height="40"></a>&nbsp;
 <a href="#roadmap"><img src="docs/assets/btn-roadmap.svg" alt="Roadmap" height="40"></a>
 
+<a href="https://news.ycombinator.com/item?id=50449891"><img src="docs/assets/btn-hackernews.svg" alt="Featured on Hacker News" height="44"></a>
+
 ![source: x86-32 Windows](https://img.shields.io/badge/source-x86--32%20Windows-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![target: ARM64 macOS](https://img.shields.io/badge/target-ARM64%20macOS-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![lifter: Remill, LLVM 17](https://img.shields.io/badge/lifter-Remill%20%E2%86%92%20LLVM%2017-ff6a00?style=flat-square&labelColor=0b0b0c)
@@ -26,7 +28,7 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 ![game files in this repository: none](https://img.shields.io/badge/game%20files-none-f4f1ea?style=flat-square&labelColor=0b0b0c)
 ![status: beta](https://img.shields.io/badge/status-beta-f4f1ea?style=flat-square&labelColor=0b0b0c)
 
-<sub>[Abstract](#abstract) · [Method](#method) · [Limits](#limits) · [Repository](#repository) · [Legal](#legal)</sub><br>
+<sub>[Why](#why) · [Abstract](#abstract) · [Method](#method) · [Limits](#limits) · [Repository](#repository) · [Legal](#legal)</sub><br>
 <sub>Beta, 2026-11-03 · measured on one Apple M1 (4 performance + 4 efficiency cores, 16 GB)</sub>
 
 </div>
@@ -43,6 +45,17 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 ---
 
 <img src="docs/assets/rule-01.svg" alt="" width="100%">
+
+## Why
+
+Black Ops II never came out on Mac, and on Apple Silicon it was not really playable before.
+[AppleGamingWiki](https://www.applegamingwiki.com/wiki/Call_of_Duty:_Black_Ops_II) lists it as unplayable under
+CrossOver and not supported under Rosetta 2. What remains is a Windows ARM virtual machine in Parallels, with reports
+ranging from 1 frame per second in matches on an M1 Max to 60–80 on M3 and M4
+([MacGamingDB](https://macgamingdb.app/games/call-of-duty-black-ops-ii)). Here the game is translated once, before it
+starts, into a native ARM64 app: 51–60 frames per second on a base M1, with no Windows and no virtual machine. Being
+native also means it can be fixed and extended like any Mac app: split-screen, which the PC version never had, is in
+progress.
 
 ## Abstract
 
@@ -344,7 +357,9 @@ plays when you own it and its files are in your game folder.
    is bound by the server thread. Native rewrites of the hottest functions come next, then frame rates above 60 for
    120 Hz screens.
 7. **Controllers**: vibration and aim assist.
-8. **Together**: real UDP sockets for Zombies co-op, Grief and Turned, and multiplayer over LAN.
+8. **Together**: real UDP sockets for Zombies co-op, Grief and Turned, and multiplayer over LAN. Then local split
+   screen, which the PC version never had: two copies of the game drawn in one window, one controller each, joined over
+   that LAN.
 9. **Later**: MetalFX, post-processing when the frame is presented, and replacement textures loaded from the player's own copy.
 
 <img src="docs/assets/rule-11.svg" alt="" width="100%">
@@ -373,5 +388,15 @@ For a copy the user owns, on hardware the user owns.
 This is an unofficial fan project. Call of Duty and Black Ops are trademarks of Activision Publishing, Inc. Steam is a
 trademark of Valve Corporation. This project is not affiliated with, endorsed by or sponsored by Activision, Treyarch,
 Microsoft or Valve. To play, buy the game.
+
+## Star History
+
+<a href="https://www.star-history.com/#adrbn/bo2-mac&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=adrbn/bo2-mac&type=Date" />
+  </picture>
+</a>
 
 <div align="center"><img src="docs/assets/footer.svg" alt="" width="100%"></div>
