@@ -17,7 +17,8 @@ MODE=${1:-campagne}; shift
 NOM=${BO2_NAME:+BO2_NAME=$BO2_NAME}
 case "$MODE:${BO2_PANNEAU:-0}" in
   campagne:*) exec scripts/play_steam.sh sp ${NOM:+"$NOM"} "$@" ;;
-  zombies:*)  exec scripts/play_steam.sh zm ${NOM:+"$NOM"} "$@" ;;
+  zombies:*)  [ ! -e "$HOME/.bo2-native/split_screen" ] || set -- BO2_SPLIT=1 "$@"   # the app menu's split screen switch
+              exec scripts/play_steam.sh zm ${NOM:+"$NOM"} "$@" ;;
   multi:*)    exec scripts/play_steam.sh mp ${NOM:+"$NOM"} "$@" ;;
   *) echo "unknown mode: $MODE (campagne, zombies or multi)" >&2; exit 2 ;;
 esac
