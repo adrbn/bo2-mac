@@ -43,28 +43,6 @@ Campagne, Zombies et multijoueur contre des bots, construits sur votre Mac à pa
 > fournir une toute faite, chaque joueur construit la sienne, et elle ne peut pas être partagée. Projet de fan non officiel, sans lien avec
 > Activision, Treyarch ni Microsoft. Pour jouer, achetez le jeu. Bêta : lisez [ce qui a été prouvé et ce qui ne l'a pas été](docs/PRERELEASE.md).
 
-## Nouveautés de la v0.2.1
-
-- **L'écran partagé de Zombies depuis le menu de l'app** : cochez *Two-Player Split Screen in Zombies* dans le menu Black Ops II,
-  branchez deux manettes, et la prochaine partie de Zombies démarre à deux joueurs, moitiés haute et basse. Sans Terminal.
-
-## Nouveautés de la v0.2.0
-
-[v0.2.0](https://github.com/adrbn/bo2-mac/releases/tag/v0.2.0), 2026-11-19, est la première version qui n'est pas un build de test.
-
-- **Une app, sans Terminal** (macOS 26 ou ultérieur) : `Black Ops II.app` embarque ses propres outils de traduction, trouve le dossier
-  de votre jeu, vérifie vos trois exécutables et affiche la conversion dans une fenêtre.
-- **Elle se met à jour toute seule** : au lancement, elle propose une version plus récente, vérifie qu'elle est signée et notariée, puis l'installe.
-  Une mise à jour ne refait que ce qui a changé : un correctif du runtime relie les trois modes en environ 3 minutes sur un M1.
-- **Zombies** : le menu principal n'est plus noir.
-- **Les cartes DLC suivent ce que vous possédez sur Steam** : un pack de cartes que vous possédez est proposé même si Steam n'a pas téléchargé ses fichiers,
-  et un pack que vous ne possédez pas reste verrouillé.
-- **Réverbération native** dans les trois modes : environ 40 % de temps en moins passé dans la réverbération sur le thread audio.
-- **Expérimental : écran partagé dans Zombies**, deux joueurs sur un seul Mac, une manette chacun, moitiés haute et basse, environ
-  28 i/s sur un M1. Désactivé par défaut ; la v0.2.1 ajoute un interrupteur dans le menu de l'app (voir [Installation](#installation)).
-
-Si vous venez d'une version antérieure, le premier lancement convertit à nouveau le jeu en entier, une seule fois (environ 2 h 30 sur un M1).
-
 ---
 
 <img src="docs/assets/rule-01.svg" alt="" width="100%">
@@ -78,7 +56,7 @@ allant de 1 image par seconde en match sur un M1 Max à 60–80 sur M3 et M4
 ([MacGamingDB](https://macgamingdb.app/games/call-of-duty-black-ops-ii)). Ici, le jeu est traduit une seule fois, avant son
 démarrage, en une app ARM64 native : 51–60 images par seconde sur un M1 de base, sans Windows et sans machine virtuelle. Être
 natif signifie aussi qu'il peut être corrigé et étendu comme n'importe quelle app Mac : l'écran partagé, que la version PC n'a jamais eu, est
-dans la [v0.2.0](https://github.com/adrbn/bo2-mac/releases/latest) comme option expérimentale dans Zombies.
+disponible comme option expérimentale dans Zombies.
 
 ## Résumé
 
@@ -307,7 +285,7 @@ et ouvrez-la. Elle embarque ses propres outils de traduction (LLVM 17, Remill, U
 [scripts/make_toolchain.sh](scripts/make_toolchain.sh)) et aucun fichier du jeu. La première fois, macOS propose d'installer
 les Command Line Tools gratuits d'Apple : cliquez sur « Installer », puis sur « Réessayer » dans la fenêtre de l'app.
 Une fois par jour au lancement, l'app cherche une version plus récente et propose de l'installer. « Installer, garder cette version » conserve
-l'app actuelle à côté, renommée avec sa version, de sorte qu'ouvrir celle-ci permet de revenir en arrière.
+l'app actuelle à côté, renommée avec sa version, de sorte qu'ouvrir celle-ci permet de revenir en arrière. Une mise à jour conserve ce qui est déjà converti et ne refait que ce que ses changements touchent : un correctif du runtime relie à nouveau les trois modes en 3 minutes environ sur un M1.
 
 **macOS 14 ou 15 : depuis le Terminal**, avec Homebrew :
 
@@ -365,7 +343,7 @@ se joue quand vous la possédez et que ses fichiers sont dans le dossier de votr
    (modèle de Mac, nombre d'images par seconde, ce qui a cassé) décident de la suite.
    Premier retour extérieur, 2026-11-05 : sur un M2 Pro (16 Go), la conversion s'est terminée et le jeu a démarré, après trois
    correctifs trouvés en chemin ([#4](https://github.com/adrbn/bo2-mac/issues/4), [#5](https://github.com/adrbn/bo2-mac/issues/5), [#6](https://github.com/adrbn/bo2-mac/issues/6)).
-2. **Sans Terminal** : fait dans la v0.2.0. Une app à télécharger et ouvrir ; elle embarque ses outils déjà construits, donc rien n'est
+2. **Sans Terminal** : fait. Une app à télécharger et ouvrir ; elle embarque ses outils déjà construits, donc rien n'est
    compilé sur votre Mac sauf le jeu lui-même, et elle se met à jour toute seule (macOS 26 ou ultérieur ; macOS 14 et 15 gardent
    l'installation par Terminal).
 3. **Entièrement traduit** : les 46 blocs de code qui passent encore par l'interpréteur Unicorn sont traduits en
@@ -382,11 +360,11 @@ se joue quand vous la possédez et que ses fichiers sont dans le dossier de votr
    que ce qui a changé (un correctif du runtime : environ 3 minutes). Ensuite : moins d'optimisation pour le code qui s'exécute rarement. Les trois modes ne partagent que 4 % de
    leurs fonctions, donc convertir le code partagé une seule fois gagnerait peu.
 6. **Plus rapide, sans chaleur** : la campagne est limitée par le thread d'ordonnancement, pas par le rendu ; le multijoueur avec 11 bots
-   est limité par le thread serveur. Des réécritures natives des fonctions les plus chaudes viennent ensuite, puis des fréquences d'images au-delà de 60 pour
+   est limité par le thread serveur. Démarré : la réverbération s'exécute en natif dans les trois modes, environ 40 % de temps en moins sur le thread audio. Des réécritures natives des autres fonctions les plus chaudes viennent ensuite, puis des fréquences d'images au-delà de 60 pour
    les écrans 120 Hz.
 7. **Manettes** : vibration et aim assist.
-8. **Ensemble** : l'écran partagé local dans Zombies, que la version PC n'a jamais eu, est expérimental depuis la v0.2.0 (un seul jeu,
-   deux joueurs, moitiés haute et basse), avec un interrupteur dans le menu de l'app depuis la v0.2.1. Ensuite : de vrais sockets UDP pour la coopération Zombies,
+8. **Ensemble** : l'écran partagé local dans Zombies, que la version PC n'a jamais eu, est expérimental (un seul jeu,
+   deux joueurs, moitiés haute et basse, environ 28 i/s sur un M1), avec un interrupteur dans le menu de l'app. Ensuite : de vrais sockets UDP pour la coopération Zombies,
    Grief et Turned, et le multijoueur en LAN.
 9. **Plus tard** : MetalFX, le post-traitement à la présentation de l'image, et des textures de remplacement chargées depuis la copie du joueur.
 

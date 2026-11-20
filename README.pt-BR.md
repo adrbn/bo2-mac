@@ -43,28 +43,6 @@ Campanha, Zombies e multiplayer contra bots, compilados no seu Mac a partir da s
 > pode lhe entregar um pronto: cada jogador compila o seu, e ele não pode ser compartilhado. Projeto de fã não oficial,
 > sem qualquer vínculo com a Activision, a Treyarch ou a Microsoft. Para jogar, compre o jogo. Beta: leia [o que foi e o que não foi provado](docs/PRERELEASE.md).
 
-## Novidades da v0.2.1
-
-- **Tela dividida no Zombies pelo menu do app**: marque *Two-Player Split Screen in Zombies* no menu **Black Ops II**,
-  conecte dois controles, e a próxima partida de Zombies começa com dois jogadores, metades superior e inferior. Sem Terminal.
-
-## Novidades da v0.2.0
-
-A [v0.2.0](https://github.com/adrbn/bo2-mac/releases/tag/v0.2.0), de 19/11/2026, é a primeira versão que não é uma build de teste.
-
-- **Um app, sem Terminal** (macOS 26 ou posterior): o `Black Ops II.app` traz suas próprias ferramentas de tradução,
-  encontra a pasta do seu jogo, verifica os seus três executáveis e mostra a conversão em uma janela.
-- **Ele se atualiza sozinho**: ao abrir, oferece uma versão mais recente, verifica se ela está assinada e notarizada e a instala.
-  Uma atualização refaz apenas o que mudou: uma correção de runtime religa os três modos em cerca de 3 minutos em um M1.
-- **Zombies**: o menu principal não fica mais preto.
-- **Os mapas de DLC seguem a sua posse na Steam**: um pacote de mapas que você possui é oferecido mesmo que a Steam não tenha
-  baixado seus arquivos, e um que você não possui continua bloqueado.
-- **Reverb nativo** nos três modos: cerca de 40 % menos tempo no reverb na thread de som.
-- **Experimental: tela dividida no Zombies**, dois jogadores em um Mac, um controle para cada, metades superior e inferior,
-  cerca de 28 fps em um M1. Desativada por padrão; a v0.2.1 acrescenta um interruptor para ela no menu do app (veja [Instalação](#instalação)).
-
-Se você vem de uma versão anterior, a primeira abertura converte o jogo inteiro de novo, uma vez (cerca de 2,5 horas em um M1).
-
 ---
 
 <img src="docs/assets/rule-01.svg" alt="" width="100%">
@@ -78,7 +56,7 @@ vão de 1 quadro por segundo em partidas em um M1 Max a 60–80 em M3 e M4
 ([MacGamingDB](https://macgamingdb.app/games/call-of-duty-black-ops-ii)). Aqui o jogo é traduzido uma vez, antes de
 iniciar, para um app ARM64 nativo: 51–60 quadros por segundo em um M1 básico, sem Windows e sem máquina virtual. Ser
 nativo também significa que ele pode ser corrigido e estendido como qualquer app de Mac: a tela dividida, que a versão
-de PC nunca teve, está na [v0.2.0](https://github.com/adrbn/bo2-mac/releases/latest) como opção experimental no Zombies.
+de PC nunca teve, está disponível como opção experimental no Zombies.
 
 ## Resumo
 
@@ -307,7 +285,7 @@ e abra-o. Ele traz suas próprias ferramentas de tradução (LLVM 17, Remill, Un
 [scripts/make_toolchain.sh](scripts/make_toolchain.sh)) e nenhum arquivo do jogo. Na primeira vez, o macOS se oferece para instalar
 as Command Line Tools gratuitas da Apple: clique em "Instalar" e depois em "Tentar novamente" na janela do app.
 Uma vez por dia, ao abrir, o app procura uma versão mais recente e se oferece para instalá-la. "Instalar, manter esta versão" mantém
-o app atual ao lado, renomeado com a sua versão, de modo que abri-lo volta atrás.
+o app atual ao lado, renomeado com a sua versão, de modo que abri-lo volta atrás. Uma atualização mantém o que já foi convertido e refaz apenas o que suas mudanças tocam: uma correção do runtime religa os três modos em cerca de 3 minutos em um M1.
 
 **macOS 14 ou 15: pelo Terminal**, com o Homebrew:
 
@@ -365,7 +343,7 @@ roda quando você o possui e os arquivos dele estão na pasta do seu jogo.
    (modelo do Mac, taxa de quadros, o que quebrou) decidem o que vem a seguir.
    Primeiro relato externo, 05/11/2026: em um M2 Pro (16 GB), a conversão foi concluída e o jogo iniciou, após três
    correções encontradas pelo caminho ([#4](https://github.com/adrbn/bo2-mac/issues/4), [#5](https://github.com/adrbn/bo2-mac/issues/5), [#6](https://github.com/adrbn/bo2-mac/issues/6)).
-2. **Sem Terminal**: feito na v0.2.0. Um app para baixar e abrir; ele traz suas ferramentas já compiladas, então nada é
+2. **Sem Terminal**: feito. Um app para baixar e abrir; ele traz suas ferramentas já compiladas, então nada é
    compilado no seu Mac além do próprio jogo, e ele se atualiza sozinho (macOS 26 ou posterior; macOS 14 e 15 mantêm a
    instalação pelo Terminal).
 3. **Totalmente traduzido**: os 46 blocos de código que ainda passam pelo interpretador Unicorn são traduzidos com
@@ -382,11 +360,11 @@ roda quando você o possui e os arquivos dele estão na pasta do seu jogo.
    apenas o que mudou (uma correção de runtime: cerca de 3 minutos). A seguir: menos otimização para código que raramente roda. Os três modos compartilham apenas 4 % das
    suas funções, então converter o código compartilhado uma única vez ganharia pouco.
 6. **Mais rápido, sem calor**: a campanha é limitada pela thread do scheduler, não pela renderização; o multiplayer com 11 bots
-   é limitado pela thread do servidor. Reescritas nativas das funções mais quentes vêm a seguir, depois taxas de quadros acima de 60 para
+   é limitado pela thread do servidor. Já iniciado: a reverberação roda nativamente nos três modos, com cerca de 40 % menos tempo na thread de som. Reescritas nativas das outras funções mais quentes vêm a seguir, depois taxas de quadros acima de 60 para
    telas de 120 Hz.
 7. **Controles**: vibração e aim assist.
-8. **Juntos**: a tela dividida local no Zombies, que a versão de PC nunca teve, é experimental desde a v0.2.0 (um jogo,
-   dois jogadores, metades superior e inferior), com um interruptor no menu do app desde a v0.2.1. A seguir: sockets UDP reais para o co-op do Zombies,
+8. **Juntos**: a tela dividida local no Zombies, que a versão de PC nunca teve, é experimental (um jogo,
+   dois jogadores, metades superior e inferior, cerca de 28 fps em um M1), com um interruptor no menu do app. A seguir: sockets UDP reais para o co-op do Zombies,
    Grief e Turned, e o multiplayer em LAN.
 9. **Mais tarde**: MetalFX, pós-processamento na apresentação do quadro e texturas de substituição carregadas a partir da cópia do próprio jogador.
 

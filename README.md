@@ -43,28 +43,6 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 > ready-made one: each player builds their own, and it may not be shared. Unofficial fan project, not affiliated with
 > Activision, Treyarch or Microsoft. To play, buy the game. Beta: read [what has and has not been proven](docs/PRERELEASE.md).
 
-## New in v0.2.1
-
-- **Zombies split screen from the app's menu**: tick *Two-Player Split Screen in Zombies* in the Black Ops II menu,
-  plug in two controllers, and the next Zombies game starts with two players, top and bottom halves. No Terminal.
-
-## New in v0.2.0
-
-[v0.2.0](https://github.com/adrbn/bo2-mac/releases/tag/v0.2.0), 2026-11-19, is the first release that is not a test build.
-
-- **An app, no Terminal** (macOS 26 or later): `Black Ops II.app` carries its own translation tools, finds your game
-  folder, checks your three executables and shows the conversion in a window.
-- **It updates itself**: at launch it offers a newer release, checks that it is signed and notarized, and installs it.
-  An update redoes only what changed: a runtime fix relinks the three modes in about 3 minutes on an M1.
-- **Zombies**: the main menu is no longer black.
-- **DLC maps follow your Steam ownership**: a map pack you own is offered even if Steam has not downloaded its files,
-  and one you do not own stays locked.
-- **Native reverb** in all three modes: about 40 % less time in the reverb on the sound thread.
-- **Experimental: Zombies split screen**, two players on one Mac, one controller each, top and bottom halves, about
-  28 fps on an M1. Off by default; v0.2.1 adds a switch for it in the app's menu (see [Install](#install)).
-
-Coming from an earlier version, the first launch converts the game again in full, once (about 2.5 hours on an M1).
-
 ---
 
 <img src="docs/assets/rule-01.svg" alt="" width="100%">
@@ -78,7 +56,7 @@ ranging from 1 frame per second in matches on an M1 Max to 60–80 on M3 and M4
 ([MacGamingDB](https://macgamingdb.app/games/call-of-duty-black-ops-ii)). Here the game is translated once, before it
 starts, into a native ARM64 app: 51–60 frames per second on a base M1, with no Windows and no virtual machine. Being
 native also means it can be fixed and extended like any Mac app: split-screen, which the PC version never had, is
-in [v0.2.0](https://github.com/adrbn/bo2-mac/releases/latest) as an experimental option in Zombies.
+available as an experimental option in Zombies.
 
 ## Abstract
 
@@ -307,7 +285,8 @@ and open it. It carries its own translation tools (LLVM 17, Remill, Unicorn, lib
 [scripts/make_toolchain.sh](scripts/make_toolchain.sh)) and no game file. The first time, macOS offers to install
 Apple's free Command Line Tools: click "Install", then "Try Again" in the app's window.
 Once a day at launch, the app looks for a newer release and offers to install it. "Install, keep this version" keeps
-the current app beside it, renamed with its version, so opening that one goes back.
+the current app beside it, renamed with its version, so opening that one goes back. An update keeps what is already
+converted and redoes only what its changes touch: a fix to the runtime relinks the three modes in about 3 minutes on an M1.
 
 **macOS 14 or 15: from the Terminal**, with Homebrew:
 
@@ -365,7 +344,7 @@ plays when you own it and its files are in your game folder.
    (Mac model, frame rate, what broke) decide what comes next.
    First outside report, 2026-11-05: on an M2 Pro (16 GB), the conversion completed and the game started, after three
    fixes found on the way ([#4](https://github.com/adrbn/bo2-mac/issues/4), [#5](https://github.com/adrbn/bo2-mac/issues/5), [#6](https://github.com/adrbn/bo2-mac/issues/6)).
-2. **No Terminal**: done in v0.2.0. One app to download and open; it carries its tools already built, so nothing is
+2. **No Terminal**: done. One app to download and open; it carries its tools already built, so nothing is
    compiled on your Mac but the game itself, and it updates itself (macOS 26 or later; macOS 14 and 15 keep the
    Terminal install).
 3. **Fully translated**: the 46 code blocks that still run through the Unicorn interpreter are translated ahead of
@@ -382,11 +361,11 @@ plays when you own it and its files are in your game folder.
    only what changed (a runtime fix: about 3 minutes). Next: less optimisation for code that rarely runs. The three modes share only 4 % of
    their functions, so converting shared code once would gain little.
 6. **Faster, without heat**: the campaign is bound by the scheduler thread, not by rendering; multiplayer with 11 bots
-   is bound by the server thread. Native rewrites of the hottest functions come next, then frame rates above 60 for
-   120 Hz screens.
+   is bound by the server thread. Started: the reverb runs natively in all three modes, about 40 % less time on the
+   sound thread. Native rewrites of the other hottest functions come next, then frame rates above 60 for 120 Hz screens.
 7. **Controllers**: vibration and aim assist.
-8. **Together**: local split screen in Zombies, which the PC version never had, is experimental since v0.2.0 (one game,
-   two players, top and bottom halves), with a switch in the app's menu since v0.2.1. Next: real UDP sockets for Zombies co-op,
+8. **Together**: local split screen in Zombies, which the PC version never had, is experimental (one game,
+   two players, top and bottom halves, about 28 fps on an M1), with a switch in the app's menu. Next: real UDP sockets for Zombies co-op,
    Grief and Turned, and multiplayer over LAN.
 9. **Later**: MetalFX, post-processing when the frame is presented, and replacement textures loaded from the player's own copy.
 
