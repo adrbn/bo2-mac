@@ -15,7 +15,7 @@ sig() {
     set -- tools/boot.py tools/lift_roots.py tools/lift_extra.py tools/pe_parser.py tools/ghidra_csv.py "tools/ghidra-$2" \
       "tools/lift_roots_$2.txt" scripts/fold_lift.sh scripts/fold tools/steam/native_impl.sh
   else
-    set -- runtime tools/steam tools/patch_redirect.py scripts/boot_info.plist third_party/HLSLcc/include
+    set -- runtime tools/steam tools/patch_redirect.py scripts/boot_info.plist third_party/HLSLcc/include "tools/interp_vas_$2.txt"
   fi
   find "$@" -type f ! -name .DS_Store ! -path '*/__pycache__/*' -print0 2>/dev/null | sort -z | xargs -0 shasum -a 256 \
     | shasum -a 256 | cut -c1-16

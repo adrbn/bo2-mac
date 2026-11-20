@@ -176,3 +176,9 @@ extern "C" uint32_t bo2_interp(State& s,uint32_t pc,void** mem,const char* site,
         std::abort();
     }
 }
+
+// tools/steam/send_back.sh writes a jump to here over the entry of each translated function it sends back: a direct
+// `bl` into it then takes the dispatcher, which finds it absent (BO2_INTERP_FORCE, win32_runtime.cpp) and calls the
+// interpreter on its original bytes, as for a call target the lift never had.
+extern "C" void* __remill_function_call(State&, uint32_t, void*);
+extern "C" [[gnu::used]] void* bo2_send_back(State* s, uint32_t pc, void* mem) { return __remill_function_call(*s, pc, mem); }
