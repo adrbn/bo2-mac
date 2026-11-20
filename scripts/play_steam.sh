@@ -40,6 +40,7 @@ cp -R "$GAME/players" "$OUT/players_before"   # le jeu écrit la vraie sauvegard
 scripts/msl_cache.sh "$PWD/boot_cache/$T/msl_cache"   # shaders des parties précédentes -> metallib (sinon chaque partie les recompile, gels de plusieurs s)
 rm -f /tmp/bo2$T.cmd /tmp/bo2$T.key
 [ "$T" = sps ] && set -- BO2_MIP_CIBLES=0 "$@"   # P856 : sans ça, fumée fausse en campagne
+[ "$T" = sps ] && set -- BO2_MOUSE_MAP=1 "$@"    # issue #6: menu pointer on the macOS pointer (settings tabs); checked in the campaign only
 [ "$T" = sps ] || set -- BO2_SHADER_CREE=1 "$@"   # P1111 : shaders traduits au chargement ; pas en campagne, la cinématique de chargement tomberait à 1 img/s
 env DYLD_LIBRARY_PATH="$PWD/boot_cache/hlslcc_build" \
     BO2_WINDOW=1 BO2_STALL_ABORT=0 BO2_MAX_IMPORTS=0 BO2_FORCE_FOCUS=1 BO2_MUTE="${BO2_MUTE:-0}" BO2_XAUDIO=1 BO2_KB_PHYSICAL=$KB \
