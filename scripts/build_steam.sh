@@ -67,9 +67,7 @@ for spec in "sps 9211 t6sp" "zms 12533 t6zm" "mps 12664 t6mp"; do
   if [ ! -f $W/.fini ]; then
     { [ -s bin/ghidra-out-$t/calltree.csv ] && [ -z "$R" ]; } || BO2_TARGET=$t python3 tools/ghidra_csv.py remplir "$S/$3.exe.unpacked.exe"
     [ -f $W/runway_vide.txt ] || : > $W/runway_vide.txt
-    # roots + blocks the game still interprets (tools/interp_vas_*, and runs/interp_vas_* that play_steam.sh collects)
-    cat tools/lift_roots_$t.txt tools/interp_vas_$t.txt $(ls runs/interp_vas_$t.txt 2>/dev/null) > $W/roots.txt
-    B="LIFT_PISTE_ENTIERE=1 BO2_TARGET=$t BOOT_WORKDIR=$W LIFT_ROOTS_FILE=$W/roots.txt LIFT_RUNWAY_FILE=$W/runway_vide.txt"
+    B="LIFT_PISTE_ENTIERE=1 BO2_TARGET=$t BOOT_WORKDIR=$W LIFT_ROOTS_FILE=tools/lift_roots_$t.txt LIFT_RUNWAY_FILE=$W/runway_vide.txt"
     if [ ! -f $W/.plie ]; then
       garde; say "$P %  $3: lift"; echo $SL > $W/.sig_lift; echo $SR > $W/.sig_remill
       veille $W/lift.log env $B python3 -u tools/boot.py -n $N -j $J --build-only || { [ $? = 124 ] \
@@ -81,6 +79,7 @@ for spec in "sps 9211 t6sp" "zms 12533 t6zm" "mps 12664 t6mp"; do
     fi
     say "$((P + 25)) %  $3: link"
     zsh tools/steam/native_impl.sh $t > $W/natif.log 2>&1 || die "$3 native fallbacks failed (see $W/natif.log)"
+    zsh tools/steam/interp_lift.sh $t > $W/interp.log 2>&1 || die "$3 interpreted blocks failed (see $W/interp.log)"
     touch $W/.link_start   # boot.py can exit 0 after a runtime file failed to compile, leaving the previous boot in place
     env $B BOOT_RELINK_ONLY=1 python3 -u tools/boot.py -n $N -j $J --build-only > $W/link.log 2>&1 || die "$3 link failed (see $W/link.log)"
     [ -x $W/boot ] && [ $W/boot -nt $W/.link_start ] && ! grep -q 'FATAL' $W/link.log || die "$3 link failed (see $W/link.log)"
