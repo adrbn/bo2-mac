@@ -26,6 +26,7 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 ![renderer: D3D11 to Metal](https://img.shields.io/badge/renderer-D3D11%20%E2%86%92%20Metal-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![Wine: none](https://img.shields.io/badge/Wine-none-ff6a00?style=flat-square&labelColor=0b0b0c)
 ![game files in this repository: none](https://img.shields.io/badge/game%20files-none-f4f1ea?style=flat-square&labelColor=0b0b0c)
+[![latest release](https://img.shields.io/github/v/release/adrbn/bo2-mac?style=flat-square&labelColor=0b0b0c&color=ff6a00&label=release)](https://github.com/adrbn/bo2-mac/releases/latest)
 ![status: beta](https://img.shields.io/badge/status-beta-f4f1ea?style=flat-square&labelColor=0b0b0c)
 
 <sub>[Why](#why) · [Abstract](#abstract) · [Method](#method) · [Limits](#limits) · [Repository](#repository) · [Legal](#legal)</sub><br>
@@ -54,8 +55,8 @@ CrossOver and not supported under Rosetta 2. What remains is a Windows ARM virtu
 ranging from 1 frame per second in matches on an M1 Max to 60–80 on M3 and M4
 ([MacGamingDB](https://macgamingdb.app/games/call-of-duty-black-ops-ii)). Here the game is translated once, before it
 starts, into a native ARM64 app: 51–60 frames per second on a base M1, with no Windows and no virtual machine. Being
-native also means it can be fixed and extended like any Mac app: split-screen, which the PC version never had, is in
-progress.
+native also means it can be fixed and extended like any Mac app: split-screen, which the PC version never had, is
+in [v0.2.0](https://github.com/adrbn/bo2-mac/releases/latest) as an experimental option in Zombies.
 
 ## Abstract
 
