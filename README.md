@@ -10,7 +10,7 @@
 **Call of Duty: Black Ops II, statically recompiled from 32-bit x86 Windows to native ARM64 macOS.**<br>
 Campaign, Zombies and multiplayer against bots, built on your Mac from your own Steam copy.
 
-<b>English</b> · <a href="README.zh.md">中文</a>
+<b>English</b> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.de.md">Deutsch</a> · <a href="README.it.md">Italiano</a> · <a href="README.ru.md">Русский</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.zh.md">中文</a>
 
 <a href="#install"><img src="docs/assets/btn-play.svg" alt="Play it" height="40"></a>&nbsp;
 <a href="#results"><img src="docs/assets/btn-results.svg" alt="Results" height="40"></a>&nbsp;
@@ -42,6 +42,28 @@ Campaign, Zombies and multiplayer against bots, built on your Mac from your own 
 > II into an app for your Mac, on your Mac. The game's code ends up inside that app, so nobody can hand you a
 > ready-made one: each player builds their own, and it may not be shared. Unofficial fan project, not affiliated with
 > Activision, Treyarch or Microsoft. To play, buy the game. Beta: read [what has and has not been proven](docs/PRERELEASE.md).
+
+## New in v0.2.1
+
+- **Zombies split screen from the app's menu**: tick *Two-Player Split Screen in Zombies* in the Black Ops II menu,
+  plug in two controllers, and the next Zombies game starts with two players, top and bottom halves. No Terminal.
+
+## New in v0.2.0
+
+[v0.2.0](https://github.com/adrbn/bo2-mac/releases/tag/v0.2.0), 2026-11-19, is the first release that is not a test build.
+
+- **An app, no Terminal** (macOS 26 or later): `Black Ops II.app` carries its own translation tools, finds your game
+  folder, checks your three executables and shows the conversion in a window.
+- **It updates itself**: at launch it offers a newer release, checks that it is signed and notarized, and installs it.
+  An update redoes only what changed: a runtime fix relinks the three modes in about 3 minutes on an M1.
+- **Zombies**: the main menu is no longer black.
+- **DLC maps follow your Steam ownership**: a map pack you own is offered even if Steam has not downloaded its files,
+  and one you do not own stays locked.
+- **Native reverb** in all three modes: about 40 % less time in the reverb on the sound thread.
+- **Experimental: Zombies split screen**, two players on one Mac, one controller each, top and bottom halves, about
+  28 fps on an M1. Off by default; v0.2.1 adds a switch for it in the app's menu (see [Install](#install)).
+
+Coming from an earlier version, the first launch converts the game again in full, once (about 2.5 hours on an M1).
 
 ---
 
@@ -101,7 +123,7 @@ The real main menu: NEW STORY, RESUME STORY, REPLAY MISSION. From <code>angola</
 missions load and hand over to the next one. Strike Force missions start with a click.</td>
 <td width="33%" valign="top"><img src="docs/assets/card-public-zombies.svg" alt="Zombies" width="100%"><br>
 The six maps, solo: main menu, lobby, match, Game Over, scoreboard, then another match in the same process.
-DLC maps play if your Steam account owns them.</td>
+DLC maps play if your Steam account owns them. Two-player split screen is experimental.</td>
 <td width="33%" valign="top"><img src="docs/assets/card-public-multi.svg" alt="Multiplayer" width="100%"><br>
 Custom Games against bots from the real menus: CHOOSE CLASS, the HUD, a full round, the scoreboard
 and back to the lobby. The match rules are this project's own script.</td>
@@ -256,8 +278,7 @@ flattering conclusion. This is one game, months of work and heavy manual interve
 
 ## Limits
 
-- **Local only.** Multiplayer and Zombies run against the responder on your Mac. There is no online play, no LAN and
-  no co-op yet. League Play is refused.
+- **Local only.** Multiplayer and Zombies run against the responder on your Mac. There is no online play and no LAN. League Play is refused.
 - **Match rules are ours.** Written in a clean room (see [Method](#method)); behaviour may differ from the original in
   places.
 - **Heat.** The Mac runs very hot during long sessions (111–116 °C reported on the M1). Play plugged in: on battery,
@@ -269,7 +290,8 @@ flattering conclusion. This is one game, months of work and heavy manual interve
 - **Window.** The game runs in a 1280×720 window.
 - **Other Macs.** Only one M1 has been measured. M2, M3 and M4 should be faster, but no number is claimed.
 - **Campaign.** Every mission loads and chains; not every one has been played end to end.
-- **Zombies.** Grief and Turned need a second player, and there is no co-op yet.
+- **Zombies.** No online or LAN co-op, so Grief and Turned cannot be played. Local split screen for two players is
+  experimental: player 2 appears when round 1 starts.
 - **macOS audio.** When the system's `coreaudiod` is unhealthy the campaign stalls on its first video. Check that
   `afplay -t 1 /System/Library/Sounds/Tink.aiff` takes about 1 s; restarting the Mac fixes it.
 
@@ -300,6 +322,11 @@ Open `Black Ops II.app`, point it at your game folder and let it convert: about 
 playable as soon as it is converted: play it then, and Zombies and multiplayer are converted when you first pick them
 in the game's menu. Otherwise the conversion goes on through all three. If the disk falls under
 8 GB free, the conversion stops cleanly and resumes where it was.
+
+**Zombies split screen (experimental).** Plug in two controllers, open the **Black Ops II** menu in the menu bar and
+tick **Two-Player Split Screen in Zombies**. It applies the next time Zombies starts, from the app or from the game's
+ZOMBIES menu entry. Player 1 plays the top half, player 2 the bottom half; player 2 appears when round 1 starts.
+Without a second controller the game stays one player. Untick it to go back to one player.
 
 **Updating, or if the conversion stops.** Run `git pull && scripts/make_app.sh --from-source` in the repository
 folder: what is already converted is kept and the conversion resumes. An update redoes only what its changes touch: a
@@ -338,8 +365,8 @@ plays when you own it and its files are in your game folder.
    (Mac model, frame rate, what broke) decide what comes next.
    First outside report, 2026-11-05: on an M2 Pro (16 GB), the conversion completed and the game started, after three
    fixes found on the way ([#4](https://github.com/adrbn/bo2-mac/issues/4), [#5](https://github.com/adrbn/bo2-mac/issues/5), [#6](https://github.com/adrbn/bo2-mac/issues/6)).
-2. **No Terminal**: one app to download and open, then drop the game folder on its window. It carries its tools
-   already built, so nothing is compiled on your Mac but the game itself (macOS 26 or later; macOS 14 and 15 keep the
+2. **No Terminal**: done in v0.2.0. One app to download and open; it carries its tools already built, so nothing is
+   compiled on your Mac but the game itself, and it updates itself (macOS 26 or later; macOS 14 and 15 keep the
    Terminal install).
 3. **Fully translated**: the 46 code blocks that still run through the Unicorn interpreter are translated ahead of
    time, and every translated instruction is checked against the interpreter;
@@ -358,9 +385,9 @@ plays when you own it and its files are in your game folder.
    is bound by the server thread. Native rewrites of the hottest functions come next, then frame rates above 60 for
    120 Hz screens.
 7. **Controllers**: vibration and aim assist.
-8. **Together**: real UDP sockets for Zombies co-op, Grief and Turned, and multiplayer over LAN. Then local split
-   screen, which the PC version never had: two copies of the game drawn in one window, one controller each, joined over
-   that LAN.
+8. **Together**: local split screen in Zombies, which the PC version never had, is experimental since v0.2.0 (one game,
+   two players, top and bottom halves), with a switch in the app's menu since v0.2.1. Next: real UDP sockets for Zombies co-op,
+   Grief and Turned, and multiplayer over LAN.
 9. **Later**: MetalFX, post-processing when the frame is presented, and replacement textures loaded from the player's own copy.
 
 <img src="docs/assets/rule-11.svg" alt="" width="100%">
