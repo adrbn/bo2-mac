@@ -79,8 +79,9 @@ for spec in "sps 9211 t6sp" "zms 12533 t6zm" "mps 12664 t6mp"; do
     fi
     say "$((P + 25)) %  $3: link"
     zsh tools/steam/native_impl.sh $t > $W/natif.log 2>&1 || die "$3 native fallbacks failed (see $W/natif.log)"
+    touch $W/.link_start   # boot.py can exit 0 after a runtime file failed to compile, leaving the previous boot in place
     env $B BOOT_RELINK_ONLY=1 python3 -u tools/boot.py -n $N -j $J --build-only > $W/link.log 2>&1 || die "$3 link failed (see $W/link.log)"
-    [ -x $W/boot ] || die "$3 link failed (see $W/link.log)"
+    [ -x $W/boot ] && [ $W/boot -nt $W/.link_start ] && ! grep -q 'FATAL' $W/link.log || die "$3 link failed (see $W/link.log)"
     echo $SK > $W/.sig_link; touch $W/.fini
   fi
   P=$((P + 30))
