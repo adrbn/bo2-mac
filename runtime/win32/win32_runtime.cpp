@@ -15854,11 +15854,31 @@ static std::unordered_map<uint32_t, void*(*)(State*, uint32_t, void*)>::iterator
 lookup_lifted(uint32_t va) {
     // BO2_INTERP_FORCE=<va> (essai de l'interpreteur) : cette entree traduite est tenue
     // pour absente. Seuls les chemins par table la voient ; un `bl` direct entre fonctions traduites, non.
-    static const uint32_t force = [] {
+    // BO2_INTERP_FORCE=<file> : every translated entry inside one of its `va[:size]` lines (hex, # comments) is held
+    // absent, and the interpreter runs through it. tools/steam/send_back.sh writes the file and turns the direct `bl`
+    // into those entries into calls to the interpreter as well (bo2_send_back, interp.cpp): halving the file finds
+    // a wrongly translated function.
+    static const std::vector<std::pair<uint32_t, uint32_t>> force = [] {
+        std::vector<std::pair<uint32_t, uint32_t>> r;
         const char* e = bo2_getenv("BO2_INTERP_FORCE");
-        return e ? (uint32_t)strtoul(e, nullptr, 16) : 0u;
+        if (!e || !*e) return r;
+        char* fin = nullptr;
+        const uint32_t un = (uint32_t)strtoul(e, &fin, 16);
+        if (!*fin) { r.push_back({un, un + 1}); return r; }
+        FILE* f = fopen(e, "r");
+        if (!f) { fprintf(stderr, "[INTERP] BO2_INTERP_FORCE: cannot read %s\n", e); abort(); }
+        char l[256];
+        while (fgets(l, sizeof l, f)) {
+            unsigned va = 0, n = 1;
+            if (sscanf(l, " %x:%x", &va, &n) >= 1 && va) r.push_back({va, va + (n ? n : 1)});
+        }
+        fclose(f);
+        fprintf(stderr, "[INTERP] BO2_INTERP_FORCE: %zu ranges sent back to the interpreter\n", r.size());
+        return r;
     }();
-    if (__builtin_expect(force != 0, 0) && va == force) return g_jump_table.end();
+    if (__builtin_expect(!force.empty(), 0))
+        for (const auto& [lo, hi] : force)
+            if (va - lo < hi - lo) return g_jump_table.end();
     auto jt = g_jump_table.find(va);
     // The rewrite can stack (0x10000000, 0x20000000, ... seen in practice), so
     // peel one range at a time rather than assuming a single application.
