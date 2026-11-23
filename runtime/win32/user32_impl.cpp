@@ -382,7 +382,8 @@ static void impl_ScreenToClient(State& s) {
         win32_mem_write32(pt_ptr + 4, (uint32_t)(int32_t)lround(gy));
         static int n = 0;
         static long px = -1, py = -1;
-        if (n < 12 && (lround(gx) != px || lround(gy) != py) && bo2_getenv("BO2_IN_PROBE")) {
+        // The first line always: a player's run.log then shows whether the fix is in the binary they run.
+        if (n < 12 && (lround(gx) != px || lround(gy) != py) && (n == 0 || bo2_getenv("BO2_IN_PROBE"))) {
             px = lround(gx); py = lround(gy); n++;
             fprintf(stderr, "[MOUSE-MAP] pointer %.0f,%.0f -> buffer %ld,%ld (before the fix: %d,%d)\n",
                     rx, ry, px, py, ax, ay);
@@ -673,11 +674,25 @@ static void impl_SetCursorPos(State& s) {
         const char* e = bo2_getenv("BO2_CURSOR_GRAB");
         return !(e && e[0] == '0');
     }();
+    // BO2_MOUSE_MAP=1 (issue #6): in the "Full screen" display mode the campaign keeps the pointer inside its window
+    // rect (its pointer-clamp routine: GetWindowRect, clamp to [left, right - 1] x [top, bottom - 1], SetCursorPos
+    // only when it clamped). That rect is 1920x1080 while the pointer moves in display points, so on a screen wider
+    // than 1920 points, or with the window on a second display, the clamp fires in the menus (seen on 2026-11-23:
+    // SetCursorPos(1919, 1079) then (0, 0)) and a held pointer was hidden and put back in the middle. The mouse-look
+    // recentre goes to the middle of the rect, never to its edge: an edge point is the clamp. Re-anchor only.
+    static const bool map = bo2_env_on("BO2_MOUSE_MAP");
+    const bool menu_clamp = map && (x == g_win_x || x == g_win_x + g_win_w - 1 ||
+                                    y == g_win_y || y == g_win_y + g_win_h - 1);
+    static bool clamp_said = false;
+    if (menu_clamp && !clamp_said) {
+        clamp_said = true;
+        fprintf(stderr, "[MOUSE-MAP] menu clamp to the window rect (%d, %d): re-anchored, pointer not held\n", x, y);
+    }
     g_ct.set++;
     g_ct.t_set = ct_now();
     g_ct.refus = (gfx_window_is_really_key() ? 0u : 1u) | (gfx_pointer_engaged() ? 0u : 2u) | (grab_ok ? 0u : 4u) |
                  (centre_frais ? 0u : 8u);
-    if (!gfx_window_is_really_key() || !gfx_pointer_engaged() || !grab_ok || !centre_frais) {
+    if (menu_clamp || !gfx_window_is_really_key() || !gfx_pointer_engaged() || !grab_ok || !centre_frais) {
         g_real_ref_x = rx; g_real_ref_y = ry;
         g_cursor_init = true;
         s.gpr.rax.dword = 1;
