@@ -302,10 +302,10 @@ playable as soon as it is converted: play it then, and Zombies and multiplayer a
 in the game's menu. Otherwise the conversion goes on through all three. If the disk falls under
 8 GB free, the conversion stops cleanly and resumes where it was.
 
-**Zombies split screen (experimental).** Plug in two controllers, open the **Black Ops II** menu in the menu bar and
-tick **Two-Player Split Screen in Zombies**. It applies the next time Zombies starts, from the app or from the game's
-ZOMBIES menu entry. Player 1 plays the top half, player 2 the bottom half; player 2 appears when round 1 starts.
-Without a second controller the game stays one player. Untick it to go back to one player.
+**Zombies split screen (experimental).** Plug in a second controller and press Start or A on it in the Zombies lobby:
+player 2 joins, like on a console. B on that controller, or unplugging it, takes player 2 out again. Player 1 plays the
+top half, player 2 the bottom half; the screen splits when the match starts, and player 2 appears when round 1 starts.
+If nobody joins, the game stays one player, full screen. There is nothing to tick.
 
 **Updating, or if the conversion stops.** Run `git pull && scripts/make_app.sh --from-source` in the repository
 folder: what is already converted is kept and the conversion resumes. An update redoes only what its changes touch: a

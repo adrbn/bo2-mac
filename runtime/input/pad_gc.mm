@@ -64,6 +64,14 @@ bool g_script_actif = false;
 Gamepad g_etat2;
 GCController* g_ctl2 = nil;
 std::vector<Etape> g_script2;
+// Drop-in like a console (BO2_SPLIT): pad 2 counts for the game only after Start or A, before the match; B or unplugging
+// it leaves; locked at match start (bo2_pad2_lock). BO2_PAD2_LOBBY=<file> simulates its presses (BO2_PAD_SCRIPT format,
+// seconds from the first time the lobby is shown); BO2_PAD2_SCRIPT alone = already joined.
+bool g_joined = false, g_locked = false;
+std::vector<Etape> g_lobby_script;
+std::chrono::steady_clock::time_point g_lobby_t0;
+bool g_lobby_seen = false;
+bool split_on() { static const bool on = bo2_getenv("BO2_SPLIT") != nullptr; return on; }
 std::chrono::steady_clock::time_point g_top;
 bool g_top_donne = false;
 
@@ -140,7 +148,12 @@ void brancher(GCController* c) {
 
 void debrancher(GCController* c) {
     std::lock_guard<std::mutex> lk(g_mu);
-    if (c == g_ctl2) { g_ctl2 = nil; g_etat2 = Gamepad{}; fprintf(stderr, "[PAD] second pad disconnected\n"); return; }
+    if (c == g_ctl2) {
+        g_ctl2 = nil; g_etat2 = Gamepad{};
+        if (!g_locked) g_joined = false;
+        fprintf(stderr, "[PAD] second pad disconnected%s\n", g_locked ? "" : ": player 2 left the lobby");
+        return;
+    }
     if (c != g_ctl) return;
     g_ctl = nil; g_branchee = false; g_etat = Gamepad{}; ++g_paquet;
     fprintf(stderr, "[PAD] manette debranchee\n");
@@ -176,6 +189,32 @@ void charger_script(const char* chemin) {
             chemin, g_script.size());
 }
 
+// Before the match: Start or A on pad 2 = player 2 joins, B = leaves (rising edges). Under g_mu, on every
+// XInputGetState(0), which the game calls every frame.
+void lobby_poll() {
+    if (!split_on() || g_locked) return;
+    uint16_t b = 0;
+    if (!g_lobby_script.empty()) {
+        if (!g_lobby_seen) return;
+        const double t = std::chrono::duration<double>(std::chrono::steady_clock::now() - g_lobby_t0).count();
+        for (const Etape& e : g_lobby_script) { if (e.t <= t) b = e.g.boutons; else break; }
+    } else if (g_ctl2) {
+        b = g_etat2.boutons;
+    } else {
+        return;
+    }
+    static uint16_t before = 0;
+    const uint16_t edges = b & ~before;
+    before = b;
+    if (!g_joined && (edges & (XI_START | XI_A))) {
+        g_joined = true;
+        fprintf(stderr, "[PAD] player 2 joined (%s)\n", edges & XI_START ? "Start" : "A");
+    } else if (g_joined && (edges & XI_B)) {
+        g_joined = false;
+        fprintf(stderr, "[PAD] player 2 left (B)\n");
+    }
+}
+
 uint64_t g_lus = 0;         // XInputGetState(0) depuis le lancement (sous g_mu)
 uint64_t g_lus_top = 0;     // ... au top du script
 
@@ -203,6 +242,9 @@ void initialiser() {
         g_file = dispatch_queue_create("bo2.pad", DISPATCH_QUEUE_SERIAL);
         if (const char* s = bo2_getenv("BO2_PAD2_SCRIPT"))
             if (lire_script(s, g_script2)) fprintf(stderr, "[PAD] pad 2 script %s: %zu steps\n", s, g_script2.size());
+        if (const char* s = bo2_getenv("BO2_PAD2_LOBBY"))
+            if (lire_script(s, g_lobby_script)) fprintf(stderr, "[PAD] pad 2 lobby presses %s: %zu steps\n", s, g_lobby_script.size());
+        g_joined = !g_script2.empty() && g_lobby_script.empty();   // older tests: a scripted pad 2 is already there
         if (const char* s = bo2_getenv("BO2_PAD_SCRIPT")) {
             charger_script(s);
             if (g_script_actif) { g_branchee = true; activer_gpad(); return; }
@@ -228,6 +270,7 @@ extern "C" uint32_t bo2_pad_etat(uint32_t idx, uint8_t out[16]) {
     initialiser();
     std::lock_guard<std::mutex> lk(g_mu);
     script_avancer();
+    if (idx == 0) lobby_poll();
     if (idx == 0) {
         const uint64_t k = ++g_lus;
         if ((k & (k - 1)) == 0)
@@ -278,11 +321,27 @@ extern "C" void bo2_pad_top() {
     if (g_branchee) activer_gpad();
 }
 
-// Pad 2 present (second pad connected or BO2_PAD2_SCRIPT), without starting the script clock (lobby).
+// Player 2 joined (pad 2 connected or simulated, then Start or A), without starting the script clock.
 extern "C" bool bo2_pad2_present() {
     initialiser();
     std::lock_guard<std::mutex> lk(g_mu);
-    return !g_script2.empty() || g_ctl2 != nil;
+    return g_joined && (!g_script2.empty() || !g_lobby_script.empty() || g_ctl2 != nil);
+}
+
+// The lobby is shown (split_screen.cpp, member list): starts the BO2_PAD2_LOBBY clock.
+extern "C" void bo2_pad2_lobby_seen() {
+    std::lock_guard<std::mutex> lk(g_mu);
+    if (g_lobby_seen) return;
+    g_lobby_seen = true; g_lobby_t0 = std::chrono::steady_clock::now();
+    fprintf(stderr, "[PAD] lobby shown: player 2 can join (Start or A on pad 2)\n");
+}
+
+// Match start: joined or not, locked until the process ends.
+extern "C" void bo2_pad2_lock() {
+    std::lock_guard<std::mutex> lk(g_mu);
+    if (g_locked) return;
+    g_locked = true;
+    fprintf(stderr, "[PAD] match start: player 2 %s\n", g_joined ? "joined" : "absent");
 }
 
 // Pad 2 (split screen): 12 bytes XINPUT_GAMEPAD, 0 if none (no second pad, no BO2_PAD2_SCRIPT).

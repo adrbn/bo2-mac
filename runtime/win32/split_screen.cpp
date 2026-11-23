@@ -26,6 +26,8 @@ extern "C" uint8_t* bo2_g_base;
 extern "C" uint32_t win32_shim_alloc(uint32_t size, uint32_t align);
 extern "C" uint32_t bo2_pad2_state(uint8_t out[12]);
 extern "C" bool bo2_pad2_present();
+extern "C" void bo2_pad2_lobby_seen();   // runtime/input/pad_gc.mm: lobby shown, player 2 may join (Start or A)
+extern "C" void bo2_pad2_lock();         // ... match start: no more joining or leaving
 
 // Hooked functions (lifted copies, renamed _impl).
 extern "C" void* sub_55af10_impl(State*, uint32_t, void*);   // client draw (eax = local client)
@@ -87,13 +89,16 @@ inline void w32(uint32_t a, uint32_t v) { memcpy(bo2_g_base + a, &v, 4); }
 inline bool pow2(uint64_t n) { return n && !(n & (n - 1)); }
 uint32_t f2u(float f) { uint32_t u; memcpy(&u, &f, 4); return u; }
 
+// Set on the first frame in game when player 2 did not join in the lobby: every hook passes through and the solo game
+// plays full screen, as without BO2_SPLIT.
+bool g_solo = false;
 bool on() {
     static const bool v = [] {
         const bool e = bo2_getenv("BO2_SPLIT") != nullptr;
-        if (e) fprintf(stderr, "[SPLIT] on: top = player 1, bottom = player 2 (needs a second pad or BO2_PAD2_SCRIPT)\n");
+        if (e) fprintf(stderr, "[SPLIT] armed: a second pad joins player 2 with Start or A in the lobby\n");
         return e;
     }();
-    return v;
+    return v && !g_solo;
 }
 
 bool g_ready = false, g_refused = false, g_sent = false, g_pass_b = false, g_in_cg = false;
@@ -356,6 +361,7 @@ extern "C" __attribute__((used)) void* bo2_ss_send(State* s, uint32_t pc, void* 
 
 extern "C" __attribute__((used)) void* bo2_ss_lobby(State* s, uint32_t pc, void* mem) {
     constexpr uint32_t kMembers = kSession + 0x208, kSize = 0x148;
+    if (on() && g32(s->gpr.rsp.dword + 4) == kSession) bo2_pad2_lobby_seen();
     if (!on() || g32(s->gpr.rsp.dword + 4) != kSession || !bo2_pad2_present()) return sub_696fe0_impl(s, pc, mem);
     int p1 = -1, free_slot = -1;
     for (int i = 0; i < 18 && free_slot < 0; ++i) {
@@ -626,14 +632,21 @@ extern "C" __attribute__((used)) void* bo2_ss_draw(State* s, uint32_t pc, void* 
     if (!on() || g_refused || s->gpr.rax.dword != 0 || g32(kClientState) != 10 || !g32(kCgPtr) ||
         !g32(g32(kCgPtr) + kRefdefW))
         return sub_55af10_impl(s, pc, mem);   // empty refdef = still loading
+    if (!g_ready) {   // match start: player 2 joined in the lobby or not, decided here, once
+        bo2_pad2_lock();
+        if (!bo2_pad2_present()) {
+            g_solo = true;
+            fprintf(stderr, "[SPLIT] player 2 did not join: solo, full screen\n");
+            return sub_55af10_impl(s, pc, mem);
+        }
+        fprintf(stderr, "[SPLIT] player 2 joined: split screen\n");
+    }
     if (!g_ready && !(g_ready = prepare())) { g_refused = true; return sub_55af10_impl(s, pc, mem); }
     const uint32_t sp = s->gpr.rsp.dword, ret = g32(sp);
 
     // Player 2 joins once round 1 has begun: added during the round intro (round still 0), the game froze in 2 runs of 4.
     const uint32_t snap = g32(g32(kCgPtr) + 0x28);
     const bool round_on = snap && (int32_t)g32(snap + 0x23b10) >= 1;
-    if (!g_bot && g_passes == 64 && !bo2_pad2_present())
-        fprintf(stderr, "[SPLIT-P2] no second pad (nor BO2_PAD2_SCRIPT): one player\n");
     if (!g_bot && g_passes >= 64 && round_on && bo2_pad2_present()) {
         if (!g_bot_requested) {
             const uint32_t d = g32(kMaxClients);

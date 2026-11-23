@@ -301,10 +301,10 @@ spielbar, sobald sie konvertiert ist: Spiele sie dann, und Zombies und Mehrspiel
 im Menü des Spiels wählst. Andernfalls läuft die Konvertierung durch alle drei weiter. Fällt die Festplatte unter
 8 GB frei, hält die Konvertierung sauber an und setzt dort fort, wo sie war.
 
-**Zombies im Splitscreen (experimentell).** Schließe zwei Controller an, öffne das Menü **Black Ops II** in der Menüleiste und
-hake **Two-Player Split Screen in Zombies** an. Es gilt beim nächsten Start von Zombies, aus der App oder über den
-Menüeintrag ZOMBIES des Spiels. Spieler 1 spielt die obere Hälfte, Spieler 2 die untere Hälfte; Spieler 2 erscheint, wenn
-Runde 1 beginnt. Ohne zweiten Controller bleibt das Spiel bei einem Spieler. Nimm den Haken heraus, um zu einem Spieler zurückzukehren.
+**Zombies im Splitscreen (experimentell).** Schließe einen zweiten Controller an und drücke darauf in der Zombies-Lobby
+Start oder A: Spieler 2 steigt ein, wie auf einer Konsole. B auf diesem Controller oder das Abziehen nimmt Spieler 2 wieder
+heraus. Spieler 1 spielt die obere Hälfte, Spieler 2 die untere; der Bildschirm teilt sich beim Start der Partie, und
+Spieler 2 erscheint, wenn Runde 1 beginnt. Steigt niemand ein, bleibt das Spiel bei einem Spieler im Vollbild. Es gibt nichts anzuhaken.
 
 **Aktualisieren, oder wenn die Konvertierung stoppt.** Führe `git pull && scripts/make_app.sh --from-source` im Repository-
 Ordner aus: Was bereits konvertiert ist, bleibt erhalten, und die Konvertierung wird fortgesetzt. Ein Update wiederholt nur, was seine Änderungen betreffen: Ein

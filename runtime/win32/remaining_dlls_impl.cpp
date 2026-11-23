@@ -3045,6 +3045,7 @@ extern "C" bool bo2_relais_jeu(const char* fichier) {
         if (const char* x = getenv(v)) garde += std::string(v) + "='" + x + "' ";
     const char* lanceur = "scripts/play_steam.sh";   // le build Steam reste sur les executables Steam
     mode = mode[0] == 'c' ? "sp" : mode[0] == 'z' ? "zm" : "mp";
+    if (mode[0] == 'z') garde += "BO2_SPLIT=1 ";   // split screen armed, as in scripts/launch.sh
     char cmd[1024];
     snprintf(cmd, sizeof cmd, "(while kill -0 %d 2>/dev/null; do sleep 1; done; pkill -f scripts/panel.py; "
              "exec env -i HOME=\"$HOME\" PATH=\"$PATH\" USER=\"$USER\" TMPDIR=\"$TMPDIR\" %s %s %s) "

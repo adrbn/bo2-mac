@@ -301,10 +301,10 @@ jogável assim que é convertida: jogue-a então, e o Zombies e o multiplayer s�
 no menu do jogo. Caso contrário, a conversão continua pelos três. Se o disco ficar com menos de
 8 GB livres, a conversão para de forma limpa e retoma de onde estava.
 
-**Tela dividida no Zombies (experimental).** Conecte dois controles, abra o menu **Black Ops II** na barra de menus e
-marque **Two-Player Split Screen in Zombies**. Vale a partir da próxima vez que o Zombies começar, pelo app ou pela
-entrada ZOMBIES do menu do jogo. O jogador 1 joga na metade superior, o jogador 2 na inferior; o jogador 2 aparece quando a
-rodada 1 começa. Sem um segundo controle, o jogo continua com um jogador. Desmarque para voltar a um jogador.
+**Tela dividida no Zombies (experimental).** Conecte um segundo controle e aperte Start ou A nele no lobby do Zombies:
+o jogador 2 entra, como num console. B nesse controle, ou desconectá-lo, tira o jogador 2. O jogador 1 joga na metade
+superior e o jogador 2 na inferior; a tela se divide quando a partida começa e o jogador 2 aparece quando a rodada 1
+começa. Se ninguém entrar, o jogo continua com um jogador, em tela cheia. Não há nada para marcar.
 
 **Atualizar, ou se a conversão parar.** Execute `git pull && scripts/make_app.sh --from-source` na pasta do
 repositório: o que já foi convertido é mantido e a conversão é retomada. Uma atualização refaz apenas o que as suas mudanças tocam: uma

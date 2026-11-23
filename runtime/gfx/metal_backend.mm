@@ -101,23 +101,6 @@ extern "C" void win32_name_the_spin(const char* why);
 #include <unordered_set>
 #include <vector>
 
-// Zombies split screen switch (app menu): a file read by scripts/launch.sh, which then starts Zombies with BO2_SPLIT=1.
-// It applies when Zombies next starts, including from the CAMPAIGN / ZOMBIES / MULTIPLAYER menu entries.
-static NSString* bo2_split_flag() { return [NSHomeDirectory() stringByAppendingPathComponent:@".bo2-native/split_screen"]; }
-@interface BO2SplitSwitch : NSObject
-- (void)toggle:(NSMenuItem*)item;
-@end
-@implementation BO2SplitSwitch
-- (void)toggle:(NSMenuItem*)item {
-    NSFileManager* fm = [NSFileManager defaultManager];
-    NSString* p = bo2_split_flag();
-    if ([fm fileExistsAtPath:p]) [fm removeItemAtPath:p error:nil];
-    else [fm createFileAtPath:p contents:[NSData data] attributes:nil];
-    item.state = [fm fileExistsAtPath:p] ? NSControlStateValueOn : NSControlStateValueOff;
-}
-@end
-static BO2SplitSwitch* g_split_switch = nil;
-
 namespace {
 
 NSWindow*                  g_window = nil;
@@ -2904,14 +2887,6 @@ extern "C" bool gfx_window_open(int width, int height) {
             NSMenu* appMenu = [[NSMenu alloc] initWithTitle:appName];
             [appMenu addItemWithTitle:@"Native ARM64 · static recompilation"
                                action:nil keyEquivalent:@""];
-            [appMenu addItem:[NSMenuItem separatorItem]];
-            g_split_switch = [[BO2SplitSwitch alloc] init];
-            NSMenuItem* split = [appMenu addItemWithTitle:@"Two-Player Split Screen in Zombies"
-                                                   action:@selector(toggle:) keyEquivalent:@""];
-            split.target = g_split_switch;
-            split.subtitle = @"Two controllers. Applies the next time Zombies starts.";
-            split.state = [[NSFileManager defaultManager] fileExistsAtPath:bo2_split_flag()]
-                              ? NSControlStateValueOn : NSControlStateValueOff;
             [appMenu addItem:[NSMenuItem separatorItem]];
             [[appMenu addItemWithTitle:@"Hide"
                                 action:@selector(hide:) keyEquivalent:@"h"]

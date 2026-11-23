@@ -302,10 +302,10 @@ puede jugar en cuanto se convierte: juégala entonces, y Zombies y el multijugad
 en el menú del juego. De lo contrario, la conversión continúa con los tres. Si el disco baja de
 8 GB libres, la conversión se detiene limpiamente y se reanuda donde estaba.
 
-**Pantalla dividida en Zombies (experimental).** Conecta dos mandos, abre el menú **Black Ops II** de la barra de menús y
-marca **Two-Player Split Screen in Zombies**. Se aplica la próxima vez que se inicie Zombies, desde la app o desde la entrada
-ZOMBIES del menú del juego. El jugador 1 juega en la mitad superior, el jugador 2 en la inferior; el jugador 2 aparece cuando
-empieza la ronda 1. Sin un segundo mando, el juego sigue siendo de un solo jugador. Desmárcalo para volver a un solo jugador.
+**Pantalla dividida en Zombies (experimental).** Conecta un segundo mando y pulsa Start o A en él en la sala de Zombies:
+el jugador 2 se une, como en consola. B en ese mando, o desconectarlo, saca al jugador 2. El jugador 1 juega en la mitad
+superior y el jugador 2 en la inferior; la pantalla se divide al empezar la partida y el jugador 2 aparece cuando empieza
+la ronda 1. Si nadie se une, el juego sigue siendo de un jugador, a pantalla completa. No hay nada que marcar.
 
 **Actualizar, o si la conversión se detiene.** Ejecuta `git pull && scripts/make_app.sh --from-source` en la carpeta del
 repositorio: lo ya convertido se conserva y la conversión se reanuda. Una actualización rehace solo lo que tocan sus cambios: una

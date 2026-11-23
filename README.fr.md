@@ -301,10 +301,10 @@ jouable dès qu'elle est convertie : jouez-y alors, et Zombies et le multijoueur
 dans le menu du jeu. Sinon, la conversion se poursuit sur les trois. Si le disque tombe sous
 8 Go libres, la conversion s'arrête proprement et reprend là où elle en était.
 
-**Écran partagé dans Zombies (expérimental).** Branchez deux manettes, ouvrez le menu **Black Ops II** dans la barre des menus et
-cochez **Two-Player Split Screen in Zombies**. Le réglage s'applique au prochain lancement de Zombies, depuis l'app ou depuis l'entrée
-ZOMBIES du menu du jeu. Le joueur 1 joue la moitié haute, le joueur 2 la moitié basse ; le joueur 2 apparaît au début de la manche 1.
-Sans seconde manette, le jeu reste à un joueur. Décochez-le pour revenir à un seul joueur.
+**Écran partagé dans Zombies (expérimental).** Branchez une seconde manette et appuyez sur Start ou A dans le salon Zombies :
+le joueur 2 rejoint la partie, comme sur console. B sur cette manette, ou la débrancher, retire le joueur 2. Le joueur 1 joue
+la moitié haute, le joueur 2 la moitié basse ; l'écran se partage au lancement de la partie et le joueur 2 apparaît au début
+de la manche 1. Si personne ne rejoint, le jeu reste à un joueur, en plein écran. Il n'y a rien à cocher.
 
 **Mise à jour, ou si la conversion s'arrête.** Exécutez `git pull && scripts/make_app.sh --from-source` dans le dossier
 du dépôt : ce qui est déjà converti est conservé et la conversion reprend. Une mise à jour ne refait que ce que ses changements touchent : un
