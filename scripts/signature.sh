@@ -8,6 +8,9 @@
 # remill: the patches Remill is built with (build_remill.sh, the app's toolchain), a change redoes the mode like lift.
 # Left out: the exes. install_steam.sh accepts one exact Steam build, so they never change under a conversion.
 cd "$(dirname "$0")/.."
+# One file order whatever the caller's locale: Finder launches in C, Terminal in en_US.UTF-8, and sort -z orders
+# names differently under each, so the same sources gave two fingerprints and a Terminal launch redid the conversion.
+export LC_ALL=C
 sig() {
   if [ "$1" = remill ]; then
     set -- tools/remill-patches/*.patch

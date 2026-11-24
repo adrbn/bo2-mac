@@ -14,7 +14,8 @@ D=$(mktemp -d "${TMPDIR:-/tmp}/bo2-update.XXXXXX") || exit 0; trap 'rm -rf "$D"'
 curl -fsSL -m 8 -o "$D/l.json" "${BO2_UPDATE_API:-https://api.github.com/repos/adrbn/bo2-mac/releases?per_page=20}" || exit 0
 mkdir -p "$HOME/.bo2-native" && touch "$ST"
 # The newest release after ours on our channel, with its zip: tag, zip URL, title, page, then what is new.
-R=$(osascript -l JavaScript - "$CUR" "$D/l.json" <<'EOF'
+# Read outside $(...): bash 3.2 (macOS /bin/bash) parses a heredoc inside $(...) as shell and fails on the JS quotes.
+read -r -d '' JS <<'EOF' || true
 function run(a) {
   ObjC.import('Foundation')
   const L = JSON.parse($.NSString.stringWithContentsOfFileEncodingError(a[1], $.NSUTF8StringEncoding, null).js).filter(r => !r.draft)
@@ -30,7 +31,7 @@ function run(a) {
   return [n.tag_name, z.browser_download_url, n.name, n.html_url, ...M.flatMap(neuf).slice(0, 8)].join('\n')
 }
 EOF
-) && [ -n "$R" ] || exit 0
+R=$(osascript -l JavaScript -e "$JS" "$CUR" "$D/l.json") && [ -n "$R" ] || exit 0
 NEW=$(sed -n 1p <<< "$R"); URL=$(sed -n 2p <<< "$R"); NAME=$(sed -n 3p <<< "$R"); PAGE=$(sed -n 4p <<< "$R")
 NOTES=$(sed -n '5,$p' <<< "$R"); [ -z "$NOTES" ] || NOTES="
 
@@ -55,16 +56,16 @@ case "$(defaults read -g AppleLanguages 2>/dev/null | tr -dc 'a-zA-Z-\n' | sed -
   *)  Q="A new version of Black Ops II is out:"; Q2="Only what it changes is converted again."; L="Later"
       K="Install, keep this version"; I="Install"; T="Downloading…"; X="The update could not be installed. It opens in your browser.";;
 esac
-B=${BO2_UPDATE_ANSWER:-$(osascript - "$Q
-
-$NAME$NOTES
-
-$Q2" "$L" "$K" "$I" <<'EOF'
+read -r -d '' AS <<'EOF' || true
 on run a
   return button returned of (display dialog (item 1 of a) with title "Black Ops II" buttons {item 2 of a, item 3 of a, item 4 of a} default button 3 cancel button 1)
 end run
 EOF
-)}
+B=${BO2_UPDATE_ANSWER:-$(osascript -e "$AS" "$Q
+
+$NAME$NOTES
+
+$Q2" "$L" "$K" "$I")}
 case "$B" in "$K"|keep) B=keep;; "$I"|install) B=install;; *) exit 0;; esac
 echec() { [ -n "${BO2_UPDATE_ANSWER:-}" ] || { osascript -e 'on run a' -e 'display alert "Black Ops II" message (item 1 of a)' -e 'end run' "$X" >/dev/null; open "$PAGE"; }
   echo "update $NEW: $1"; exit 0; }
