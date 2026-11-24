@@ -1,6 +1,6 @@
 # Steam mps: blocks the running game handed to the Unicorn interpreter ([INTERP] <VA> in run.log), harvested from
 # play sessions. Lift roots (scripts/build_steam.sh); tools/lift_extra.py --list reads the same format. Site: appel = call
-# target, saut = indirect jump target, bloc = missing block.
+# target, saut = indirect jump target, bloc = missing block, deroule = return into untranslated code.
 0x4f6d80  # appel
 0x50aae7  # saut
 0x5e33d0  # appel
@@ -22,5 +22,6 @@
 0xa33bd2  # bloc
 0xa33d51  # bloc
 0xa340dc  # bloc
+0xa3e759  # bloc
 0xa3e799  # bloc
 0xa3e7ef  # bloc
