@@ -366,7 +366,7 @@ se joue quand vous la possédez et que ses fichiers sont dans le dossier de votr
 8. **Ensemble** : l'écran partagé local dans Zombies, que la version PC n'a jamais eu, est expérimental (un seul jeu,
    deux joueurs, moitiés haute et basse, environ 28 i/s sur un M1), avec un interrupteur dans le menu de l'app. Ensuite : de vrais sockets UDP pour la coopération Zombies,
    Grief et Turned, et le multijoueur en LAN.
-9. **Plus tard** : MetalFX, le post-traitement à la présentation de l'image, et des textures de remplacement chargées depuis la copie du joueur.
+9. **Plus tard** : MetalFX, le post-traitement à la présentation de l'image, des textures de remplacement chargées depuis la copie du joueur, et des ombres et une occlusion ambiante en ray tracing sur les Mac qui l'ont en matériel (M3 et suivants).
 
 <img src="docs/assets/rule-11.svg" alt="" width="100%">
 

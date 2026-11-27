@@ -366,7 +366,7 @@ ist spielbar, wenn du sie besitzt und ihre Dateien in deinem Spieleordner liegen
 8. **Gemeinsam**: Lokaler Splitscreen in Zombies, den die PC-Version nie hatte, ist experimentell (ein Spiel,
    zwei Spieler, obere und untere Hälfte, etwa 28 fps auf einem M1), mit einem Schalter im Menü der App. Als Nächstes: echte UDP-Sockets für Zombies-Koop,
    Grief und Turned sowie Mehrspieler über LAN.
-9. **Später**: MetalFX, Nachbearbeitung bei der Präsentation des Bildes und Ersatztexturen, geladen aus der eigenen Kopie des Spielers.
+9. **Später**: MetalFX, Nachbearbeitung bei der Präsentation des Bildes Ersatztexturen, geladen aus der eigenen Kopie des Spielers, sowie Schatten und Umgebungsverdeckung per Raytracing auf Macs mit Hardware-Raytracing (M3 und neuer).
 
 <img src="docs/assets/rule-11.svg" alt="" width="100%">
 

@@ -367,7 +367,7 @@ plays when you own it and its files are in your game folder.
 8. **Together**: local split screen in Zombies, which the PC version never had, is experimental (one game,
    two players, top and bottom halves, about 28 fps on an M1), with a switch in the app's menu. Next: real UDP sockets for Zombies co-op,
    Grief and Turned, and multiplayer over LAN.
-9. **Later**: MetalFX, post-processing when the frame is presented, and replacement textures loaded from the player's own copy.
+9. **Later**: MetalFX, post-processing when the frame is presented, replacement textures loaded from the player's own copy, and ray-traced shadows and ambient occlusion on Macs with hardware ray tracing (M3 and later).
 
 <img src="docs/assets/rule-11.svg" alt="" width="100%">
 

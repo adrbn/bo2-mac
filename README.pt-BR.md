@@ -366,7 +366,7 @@ roda quando você o possui e os arquivos dele estão na pasta do seu jogo.
 8. **Juntos**: a tela dividida local no Zombies, que a versão de PC nunca teve, é experimental (um jogo,
    dois jogadores, metades superior e inferior, cerca de 28 fps em um M1), com um interruptor no menu do app. A seguir: sockets UDP reais para o co-op do Zombies,
    Grief e Turned, e o multiplayer em LAN.
-9. **Mais tarde**: MetalFX, pós-processamento na apresentação do quadro e texturas de substituição carregadas a partir da cópia do próprio jogador.
+9. **Mais tarde**: MetalFX, pós-processamento na apresentação do quadro texturas de substituição carregadas a partir da cópia do próprio jogador, e sombras e oclusão de ambiente com ray tracing nos Macs que têm ray tracing por hardware (M3 e posteriores).
 
 <img src="docs/assets/rule-11.svg" alt="" width="100%">
 
